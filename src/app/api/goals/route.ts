@@ -40,3 +40,14 @@ export async function PATCH(req: NextRequest) {
     .where(eq(financialGoals.id, g.id)).returning();
   return NextResponse.json({ goal: row });
 }
+
+export async function DELETE(req: NextRequest) {
+  const s = await getSession();
+  if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  const [g] = await db.select().from(financialGoals).where(eq(financialGoals.id, id));
+  if (!g || g.userId !== s.sub) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  await db.delete(financialGoals).where(eq(financialGoals.id, id));
+  return NextResponse.json({ ok: true });
+}

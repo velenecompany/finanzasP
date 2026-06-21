@@ -59,6 +59,14 @@ export default function NegocioClient() {
     if (!confirm("¿Eliminar este producto?")) return;
     await fetch(`/api/vapes/products?id=${id}`, { method: "DELETE" }); load();
   }
+  async function delSale(id: string) {
+    if (!confirm("¿Eliminar esta venta? Se devolverá el stock.")) return;
+    await fetch(`/api/vapes/sales?id=${id}`, { method: "DELETE" }); load();
+  }
+  async function delExpense(id: string) {
+    if (!confirm("¿Eliminar este gasto?")) return;
+    await fetch(`/api/vapes/expenses?id=${id}`, { method: "DELETE" }); load();
+  }
 
   const invValue = products.reduce((s, p) => s + p.stock * Number(p.unitCost), 0);
   const totalProfit = sales.reduce((s, v) => s + Number(v.profit), 0);
@@ -119,7 +127,7 @@ export default function NegocioClient() {
             </div>
             {sales.length === 0 ? <div className="text-center py-8 text-[var(--text-3)] text-[13px]">Sin ventas registradas.</div> : (
               <table className="w-full"><thead><tr className="text-[11px] uppercase text-[var(--text-3)] font-semibold">
-                <th className="text-left pb-3 border-b border-[var(--border)]">Producto</th><th className="text-left pb-3 border-b border-[var(--border)]">Tipo</th><th className="text-right pb-3 border-b border-[var(--border)]">Cant.</th><th className="text-right pb-3 border-b border-[var(--border)]">Ingreso</th><th className="text-right pb-3 border-b border-[var(--border)]">Utilidad</th><th className="text-right pb-3 border-b border-[var(--border)]">Fecha</th>
+                <th className="text-left pb-3 border-b border-[var(--border)]">Producto</th><th className="text-left pb-3 border-b border-[var(--border)]">Tipo</th><th className="text-right pb-3 border-b border-[var(--border)]">Cant.</th><th className="text-right pb-3 border-b border-[var(--border)]">Ingreso</th><th className="text-right pb-3 border-b border-[var(--border)]">Utilidad</th><th className="text-right pb-3 border-b border-[var(--border)]">Fecha</th><th className="pb-3 border-b border-[var(--border)] w-8"></th>
               </tr></thead><tbody>{sales.map((v) => (
                 <tr key={v.id}>
                   <td className="py-3 border-b border-[var(--border)] text-[13px] font-medium">{v.productName ?? "—"}</td>
@@ -128,6 +136,7 @@ export default function NegocioClient() {
                   <td className="py-3 border-b border-[var(--border)] text-[13px] text-right tnum">{formatMXN(Number(v.unitPrice) * v.quantity)}</td>
                   <td className="py-3 border-b border-[var(--border)] text-[13px] text-right tnum text-[var(--income)]">+{formatMXN(v.profit)}</td>
                   <td className="py-3 border-b border-[var(--border)] text-[13px] text-right text-[var(--text-2)]">{formatDate(v.date)}</td>
+                  <td className="py-3 border-b border-[var(--border)] text-right"><button onClick={() => delSale(v.id)} className="text-[var(--text-3)] hover:text-[var(--expense)] transition"><Trash2 size={14} /></button></td>
                 </tr>
               ))}</tbody></table>
             )}
@@ -141,8 +150,8 @@ export default function NegocioClient() {
               <button onClick={() => setModal("expense")} className="inline-flex items-center gap-2 bg-[var(--action)] text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:opacity-90 transition"><Plus size={15} strokeWidth={2.2} /> Nuevo gasto</button>
             </div>
             {expenses.length === 0 ? <div className="text-center py-8 text-[var(--text-3)] text-[13px]">Sin gastos. Registra compras de inventario, publicidad, transporte...</div> : (
-              <table className="w-full"><thead><tr className="text-[11px] uppercase text-[var(--text-3)] font-semibold"><th className="text-left pb-3 border-b border-[var(--border)]">Concepto</th><th className="text-right pb-3 border-b border-[var(--border)]">Fecha</th><th className="text-right pb-3 border-b border-[var(--border)]">Monto</th></tr></thead>
-              <tbody>{expenses.map((e) => (<tr key={e.id}><td className="py-3 border-b border-[var(--border)] text-[13px] font-medium">{e.concept}</td><td className="py-3 border-b border-[var(--border)] text-[13px] text-right text-[var(--text-2)]">{formatDate(e.date)}</td><td className="py-3 border-b border-[var(--border)] text-[13px] text-right tnum text-[var(--expense)]">−{formatMXN(e.amount)}</td></tr>))}</tbody></table>
+              <table className="w-full"><thead><tr className="text-[11px] uppercase text-[var(--text-3)] font-semibold"><th className="text-left pb-3 border-b border-[var(--border)]">Concepto</th><th className="text-right pb-3 border-b border-[var(--border)]">Fecha</th><th className="text-right pb-3 border-b border-[var(--border)]">Monto</th><th className="pb-3 border-b border-[var(--border)] w-8"></th></tr></thead>
+              <tbody>{expenses.map((e) => (<tr key={e.id}><td className="py-3 border-b border-[var(--border)] text-[13px] font-medium">{e.concept}</td><td className="py-3 border-b border-[var(--border)] text-[13px] text-right text-[var(--text-2)]">{formatDate(e.date)}</td><td className="py-3 border-b border-[var(--border)] text-[13px] text-right tnum text-[var(--expense)]">−{formatMXN(e.amount)}</td><td className="py-3 border-b border-[var(--border)] text-right"><button onClick={() => delExpense(e.id)} className="text-[var(--text-3)] hover:text-[var(--expense)] transition"><Trash2 size={14} /></button></td></tr>))}</tbody></table>
             )}
           </div>
         )}

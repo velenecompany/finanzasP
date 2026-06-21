@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Target, TrendingUp } from "lucide-react";
+import { Plus, Target, TrendingUp, Trash2 } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import Modal, { Field, inputCls } from "@/components/Modal";
@@ -25,6 +25,12 @@ export default function MetasClient() {
     await fetch("/api/goals", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: form.name, targetAmount: target, targetDate: form.targetDate || undefined, priority: Number(form.priority) }) });
     setSaving(false); setOpen(false); setForm({ name: "", targetAmount: "", targetDate: "", priority: "2" }); load();
+  }
+
+  async function deleteGoal(id: string) {
+    if (!confirm("¿Eliminar esta meta?")) return;
+    await fetch(`/api/goals?id=${id}`, { method: "DELETE" });
+    load();
   }
 
   async function contribute(id: string) {
@@ -74,7 +80,10 @@ export default function MetasClient() {
                         <div className="text-[11px] font-mono" style={{ color: prio.c }}>Prioridad {prio.t}</div>
                       </div>
                     </div>
-                    <button onClick={() => contribute(g.id)} className="text-[12px] font-semibold text-[var(--income)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition">+ Aportar</button>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => contribute(g.id)} className="text-[12px] font-semibold text-[var(--income)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition">+ Aportar</button>
+                      <button onClick={() => deleteGoal(g.id)} className="w-8 grid place-items-center text-[var(--text-3)] hover:text-[var(--expense)] border border-[var(--border)] rounded-lg transition"><Trash2 size={14} /></button>
+                    </div>
                   </div>
                   <div className="flex items-end justify-between mb-2">
                     <span className="text-[22px] font-bold tnum text-[var(--income)]">{formatMXN(cur)}</span>

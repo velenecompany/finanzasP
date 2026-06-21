@@ -24,3 +24,14 @@ export async function POST(req: NextRequest) {
   }).returning();
   return NextResponse.json({ expense: row }, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  const s = await getSession();
+  if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  const [e] = await db.select().from(vapeExpenses).where(eq(vapeExpenses.id, id));
+  if (!e || e.userId !== s.sub) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  await db.delete(vapeExpenses).where(eq(vapeExpenses.id, id));
+  return NextResponse.json({ ok: true });
+}

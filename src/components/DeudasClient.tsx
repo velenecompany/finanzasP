@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatMXN, formatDate } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import Modal, { Field, inputCls } from "@/components/Modal";
@@ -23,6 +23,12 @@ export default function DeudasClient() {
     await fetch("/api/debts", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ creditor: form.creditor, totalAmount: total, interestRate: parseFloat(form.interestRate) || 0, dueDate: form.dueDate || undefined }) });
     setSaving(false); setOpen(false); setForm({ creditor: "", totalAmount: "", interestRate: "", dueDate: "" }); load();
+  }
+
+  async function deleteDebt(id: string) {
+    if (!confirm("¿Eliminar esta deuda?")) return;
+    await fetch(`/api/debts?id=${id}`, { method: "DELETE" });
+    load();
   }
 
   async function pay(id: string) {
@@ -67,7 +73,10 @@ export default function DeudasClient() {
                         {d.dueDate ? ` · vence ${formatDate(d.dueDate)}` : ""}
                       </div>
                     </div>
-                    <button onClick={() => pay(d.id)} className="text-[12px] font-semibold text-[var(--income)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition">Pagar</button>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => pay(d.id)} className="text-[12px] font-semibold text-[var(--income)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 hover:bg-[var(--surface-2)] transition">Pagar</button>
+                      <button onClick={() => deleteDebt(d.id)} className="w-8 grid place-items-center text-[var(--text-3)] hover:text-[var(--expense)] border border-[var(--border)] rounded-lg transition"><Trash2 size={14} /></button>
+                    </div>
                   </div>
                   <div className="flex items-end justify-between mb-2">
                     <span className="text-[22px] font-bold tnum text-[var(--expense)]">{formatMXN(rem)}</span>

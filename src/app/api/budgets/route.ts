@@ -40,3 +40,14 @@ export async function POST(req: NextRequest) {
   }).returning();
   return NextResponse.json({ budget: row }, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  const s = await getSession();
+  if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  const [b] = await db.select().from(budgets).where(eq(budgets.id, id));
+  if (!b || b.userId !== s.sub) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  await db.delete(budgets).where(eq(budgets.id, id));
+  return NextResponse.json({ ok: true });
+}

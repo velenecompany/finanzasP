@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Trash2 } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import Modal, { Field, inputCls } from "@/components/Modal";
@@ -25,6 +25,12 @@ export default function PresupuestosClient() {
     if (expense[0]) setCategoryId(expense[0].id);
   };
   useEffect(() => { load(); }, []);
+
+  async function deleteBudget(id: string) {
+    if (!confirm("¿Eliminar este presupuesto?")) return;
+    await fetch(`/api/budgets?id=${id}`, { method: "DELETE" });
+    load();
+  }
 
   async function save() {
     const value = parseFloat(limit);
@@ -61,12 +67,15 @@ export default function PresupuestosClient() {
                       <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: b.color }} />
                       <span className="text-[14px] font-semibold">{b.categoryName}</span>
                     </div>
+                    <div className="flex items-center gap-2">
                     {pct >= 80 && (
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md font-mono"
                         style={{ background: `${color}1f`, color }}>
                         <AlertTriangle size={12} /> {pct >= 100 ? "Excedido" : "Cerca del límite"}
                       </span>
                     )}
+                    <button onClick={() => deleteBudget(b.id)} className="text-[var(--text-3)] hover:text-[var(--expense)] transition"><Trash2 size={15} /></button>
+                    </div>
                   </div>
                   <div className="flex items-end justify-between mb-2">
                     <span className="text-[22px] font-bold tnum" style={{ color }}>{formatMXN(b.spent)}</span>

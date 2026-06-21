@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Minus, BarChart3 } from "lucide-react";
+import { Plus, Minus, BarChart3, Trash2 } from "lucide-react";
 import { formatMXN, formatDate } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import TxModal from "@/components/TxModal";
@@ -19,6 +19,12 @@ export default function FinanzasClient({ transactions }: { transactions: Tx[] })
   const ne = transactions.filter((t) => t.type === "expense").length;
 
   const openWith = (t: "income" | "expense") => { setInitialType(t); setOpen(true); };
+
+  async function deleteTx(id: string) {
+    if (!confirm("¿Eliminar este movimiento?")) return;
+    await fetch(`/api/transactions?id=${id}`, { method: "DELETE" });
+    router.refresh();
+  }
 
   return (
     <>
@@ -64,6 +70,7 @@ export default function FinanzasClient({ transactions }: { transactions: Tx[] })
                   <th className="text-left pb-3 border-b border-[var(--border)]">Tipo</th>
                   <th className="text-left pb-3 border-b border-[var(--border)]">Fecha</th>
                   <th className="text-right pb-3 border-b border-[var(--border)]">Monto</th>
+                  <th className="pb-3 border-b border-[var(--border)] w-10"></th>
                 </tr>
               </thead>
               <tbody>
@@ -75,6 +82,7 @@ export default function FinanzasClient({ transactions }: { transactions: Tx[] })
                     <td className="py-3 border-b border-[var(--border)] text-[13px] text-right tnum font-semibold" style={{ color: t.type === "income" ? "var(--income)" : "var(--expense)" }}>
                       {t.type === "income" ? "+" : "−"}{formatMXN(t.amount)}
                     </td>
+                    <td className="py-3 border-b border-[var(--border)] text-right w-10"><button onClick={() => deleteTx(t.id)} className="text-[var(--text-3)] hover:text-[var(--expense)] transition"><Trash2 size={15} /></button></td>
                   </tr>
                 ))}
               </tbody>

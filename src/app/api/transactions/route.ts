@@ -15,34 +15,29 @@ const schema = z.object({
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-  const rows = await db
-    .select()
-    .from(transactions)
-    .where(eq(transactions.userId, session.sub))
-    .orderBy(desc(transactions.date));
+  const rows = await db.select().from(transactions)
+    .where(eq(transactions.userId, session.sub)).orderBy(desc(transactions.date));
   return NextResponse.json({ transactions: rows });
 }
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
   const parsed = schema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success)
-    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
-
+  if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const { type, amount, description, date } = parsed.data;
-  const [row] = await db
-    .insert(transactions)
-    .values({
-      userId: session.sub,
-      type,
-      amount: amount.toFixed(2),
-      description: description ?? null,
-      date: date ? new Date(date) : new Date(),
-    })
-    .returning();
-
+  const [row] = await db.insert(transactions).values({
+    userId: session.sub, type, amount: amount.toFixed(2),
+    description: description ?? null, date: date ? new Date(date) : new Date(),
+  }).returning();
   return NextResponse.json({ transaction: row }, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  await db.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.userId, session.sub)));
+  return NextResponse.json({ ok: true });
 }
