@@ -1,0 +1,112 @@
+"use client";
+import { useEffect, useState } from "react";
+import { Plus, CreditCard } from "lucide-react";
+import { formatMXN } from "@/lib/utils";
+import Topbar from "@/components/Topbar";
+import Modal, { Field, inputCls } from "@/components/Modal";
+
+type Card = { id: string; name: string; creditLimit: string; currentBalance: string; cutoffDay: number | null; paymentDay: number | null };
+
+const GRADIENTS = ["linear-gradient(135deg,#2A1240,#160A22)", "linear-gradient(135deg,#0C2233,#08141D)", "linear-gradient(135deg,#1B2A1F,#0A1711)", "linear-gradient(135deg,#2A1A12,#1A0E08)"];
+
+export default function TarjetasClient() {
+  const [cards, setCards] = useState<Card[]>([]);
+  const [openCard, setOpenCard] = useState(false);
+  const [openTx, setOpenTx] = useState(false);
+  const [activeCard, setActiveCard] = useState<string>("");
+  const [cardForm, setCardForm] = useState({ name: "", creditLimit: "", cutoffDay: "", paymentDay: "" });
+  const [txForm, setTxForm] = useState({ type: "charge", amount: "", description: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => setCards((await (await fetch("/api/cards")).json()).cards ?? []);
+  useEffect(() => { load(); }, []);
+
+  async function saveCard() {
+    const lim = parseFloat(cardForm.creditLimit);
+    if (!cardForm.name || !lim) return;
+    setSaving(true);
+    await fetch("/api/cards", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: cardForm.name, creditLimit: lim, cutoffDay: parseInt(cardForm.cutoffDay) || undefined, paymentDay: parseInt(cardForm.paymentDay) || undefined }) });
+    setSaving(false); setOpenCard(false); setCardForm({ name: "", creditLimit: "", cutoffDay: "", paymentDay: "" }); load();
+  }
+
+  async function saveTx() {
+    const amt = parseFloat(txForm.amount);
+    if (!amt || !activeCard) return;
+    setSaving(true);
+    await fetch("/api/cards/transactions", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardId: activeCard, type: txForm.type, amount: amt, description: txForm.description }) });
+    setSaving(false); setOpenTx(false); setTxForm({ type: "charge", amount: "", description: "" }); load();
+  }
+
+  const totalLimit = cards.reduce((s, c) => s + Number(c.creditLimit), 0);
+  const totalBalance = cards.reduce((s, c) => s + Number(c.currentBalance), 0);
+  const available = totalLimit - totalBalance;
+  const util = totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : 0;
+
+  return (
+    <>
+      <Topbar title="Tarjetas de crédito" subtitle="Límites, utilización y cortes" />
+      <div className="p-5 md:p-7 max-w-[1240px] w-full mx-auto animate-rise">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[18px]">
+          {cards.map((c, i) => {
+            const lim = Number(c.creditLimit), bal = Number(c.currentBalance);
+            const u = lim > 0 ? Math.round((bal / lim) * 100) : 0;
+            return (
+              <div key={c.id} className="rounded-[18px] p-[22px] relative overflow-hidden min-h-[188px] flex flex-col justify-between border border-[var(--border)]" style={{ background: GRADIENTS[i % 4] }}>
+                <div className="flex justify-between items-start relative z-10">
+                  <div className="font-bold text-[15px] text-white">{c.name}</div>
+                  <div className="w-[34px] h-[22px] rounded bg-white/15 grid place-items-center text-[9px] font-mono tracking-wider text-white/80">CREDIT</div>
+                </div>
+                <div className="font-mono text-[15px] tracking-[0.18em] text-white/60 relative z-10 my-1.5">•••• •••• •••• ••••</div>
+                <div className="relative z-10">
+                  <div className="flex justify-between text-[11px] text-white/60 mb-1.5 font-mono"><span>Utilización</span><span>{u}%</span></div>
+                  <div className="h-1.5 bg-white/15 rounded-full overflow-hidden"><div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${u}%` }} /></div>
+                  <div className="flex justify-between mt-3 text-[11.5px]">
+                    <div><span className="text-white/55 block">Disponible</span><b className="text-white text-[13px] tnum">{formatMXN(lim - bal)}</b></div>
+                    <div><span className="text-white/55 block">Límite</span><b className="text-white text-[13px] tnum">{formatMXN(lim)}</b></div>
+                    {c.cutoffDay && <div><span className="text-white/55 block">Corte</span><b className="text-white text-[13px]">Día {c.cutoffDay}</b></div>}
+                  </div>
+                  <button onClick={() => { setActiveCard(c.id); setOpenTx(true); }} className="mt-3 w-full text-[12px] font-semibold text-white bg-white/15 hover:bg-white/25 rounded-lg py-2 transition">Registrar movimiento</button>
+                </div>
+              </div>
+            );
+          })}
+          <div onClick={() => setOpenCard(true)} className="bg-[var(--surface)] border border-dashed border-[var(--border)] rounded-[18px] min-h-[188px] flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-[var(--surface-2)] transition">
+            <div className="w-10 h-10 rounded-[10px] bg-[var(--action-soft)] grid place-items-center"><Plus size={20} className="text-[var(--action)]" /></div>
+            <div className="text-center"><b className="text-[14px]">Agregar tarjeta</b><div className="text-[12px] text-[var(--text-3)] mt-0.5">Nu, Klar, etc.</div></div>
+          </div>
+        </div>
+
+        {cards.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-[18px] mt-[18px]">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Crédito disponible</div><div className="text-[24px] font-bold tnum text-[var(--income)] mt-1">{formatMXN(available)}</div></div>
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Utilización global</div><div className="text-[24px] font-bold tnum mt-1" style={{ color: util >= 50 ? "var(--gold)" : "var(--text)" }}>{util}%</div></div>
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Deuda total</div><div className="text-[24px] font-bold tnum text-[var(--expense)] mt-1">{formatMXN(totalBalance)}</div></div>
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Límite total</div><div className="text-[24px] font-bold tnum mt-1">{formatMXN(totalLimit)}</div></div>
+          </div>
+        )}
+      </div>
+
+      <Modal open={openCard} onClose={() => setOpenCard(false)} title="Agregar tarjeta">
+        <Field label="Nombre"><input className={inputCls} placeholder="Nu México" value={cardForm.name} onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })} /></Field>
+        <Field label="Límite de crédito"><input className={inputCls} type="number" inputMode="decimal" placeholder="2000" value={cardForm.creditLimit} onChange={(e) => setCardForm({ ...cardForm, creditLimit: e.target.value })} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Día de corte" hint="(1-31)"><input className={inputCls} type="number" placeholder="15" value={cardForm.cutoffDay} onChange={(e) => setCardForm({ ...cardForm, cutoffDay: e.target.value })} /></Field>
+          <Field label="Día de pago" hint="(1-31)"><input className={inputCls} type="number" placeholder="5" value={cardForm.paymentDay} onChange={(e) => setCardForm({ ...cardForm, paymentDay: e.target.value })} /></Field>
+        </div>
+        <button onClick={saveCard} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Agregar tarjeta"}</button>
+      </Modal>
+
+      <Modal open={openTx} onClose={() => setOpenTx(false)} title="Movimiento de tarjeta">
+        <div className="grid grid-cols-2 gap-1.5 bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-1.5 mb-[15px]">
+          <button onClick={() => setTxForm({ ...txForm, type: "charge" })} className={`py-2.5 rounded-lg text-[13px] font-semibold transition ${txForm.type === "charge" ? "bg-[var(--expense-soft)] text-[var(--expense)]" : "text-[var(--text-2)]"}`}>Compra</button>
+          <button onClick={() => setTxForm({ ...txForm, type: "payment" })} className={`py-2.5 rounded-lg text-[13px] font-semibold transition ${txForm.type === "payment" ? "bg-[var(--income-soft)] text-[var(--income)]" : "text-[var(--text-2)]"}`}>Pago</button>
+        </div>
+        <Field label="Monto"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={txForm.amount} onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })} /></Field>
+        <Field label="Descripción" hint="(opcional)"><input className={inputCls} placeholder="Súper, gasolina..." value={txForm.description} onChange={(e) => setTxForm({ ...txForm, description: e.target.value })} /></Field>
+        <button onClick={saveTx} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar"}</button>
+      </Modal>
+    </>
+  );
+}

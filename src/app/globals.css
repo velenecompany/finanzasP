@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-manrope: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --bg: #0a0b0d;
+  --surface: #101216;
+  --surface-2: #15181d;
+  --surface-3: #1a1e24;
+  --border: #1e222a;
+  --text: #f4f5f7;
+  --text-2: #9aa0a8;
+  --text-3: #5a616b;
+  --income: #34d8a0;
+  --income-soft: rgba(52, 216, 160, 0.12);
+  --expense: #f2766b;
+  --expense-soft: rgba(242, 118, 107, 0.12);
+  --action: #5b8def;
+  --action-soft: rgba(91, 141, 239, 0.14);
+  --gold: #d8b36a;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "tnum";
+}
+::selection { background: var(--action-soft); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; }
+
+.tnum { font-variant-numeric: tabular-nums; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+.animate-rise { animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.animate-pop { animation: pop 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
