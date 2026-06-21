@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, aiChatSessions, aiChatMessages } from "@/lib/db";
@@ -7,17 +10,14 @@ import { SYSTEM_PROMPT, GROQ_MODEL } from "@/lib/ai";
 export async function POST(req: NextRequest) {
   const s = await getSession();
   if (!s) return new Response("No autorizado", { status: 401 });
-
   const { sessionId, message } = await req.json();
   if (!process.env.GROQ_API_KEY)
-    return new Response("Falta GROQ_API_KEY en .env.local", { status: 500 });
+    return new Response("Falta GROQ_API_KEY", { status: 500 });
 
-  // historial de la sesión
   const history = sessionId
     ? await db.select().from(aiChatMessages).where(eq(aiChatMessages.sessionId, sessionId))
     : [];
 
-  // guardar mensaje del usuario + titular la sesión si es el primero
   if (sessionId) {
     await db.insert(aiChatMessages).values({ sessionId, role: "user", content: message });
     if (history.length === 0)
