@@ -1,9 +1,24 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "WealthFlow",
   description: "Finanzas personales y control de negocio",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "WealthFlow" },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-touch-icon.png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0b0d",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
