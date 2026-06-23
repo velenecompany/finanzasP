@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Wallet, BarChart3, Target, Receipt,
-  CreditCard, Package, TrendingUp, Bot, FileText, Sparkles,
+  CreditCard, Package, TrendingUp, Bot, FileText, Sparkles, LogOut,
 } from "lucide-react";
 
 const NAV = [
@@ -30,6 +30,11 @@ const NAV = [
 
 export default function Sidebar({ name }: { name: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
   return (
     <aside className="hidden md:flex flex-col w-[248px] border-r border-[var(--border)] sticky top-0 h-screen px-3.5 py-5 bg-[var(--bg)]">
       <div className="flex items-center gap-3 px-2 pb-5">
@@ -63,10 +68,14 @@ export default function Sidebar({ name }: { name: string }) {
           <div className="w-8 h-8 rounded-[9px] bg-[var(--surface-2)] grid place-items-center font-bold text-[13px] text-[var(--income)]">
             {name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <b className="text-[13px] font-semibold leading-tight block">{name}</b>
+          <div className="min-w-0 flex-1">
+            <b className="text-[13px] font-semibold leading-tight block truncate">{name}</b>
             <span className="text-[11px] text-[var(--text-3)]">Plan Pro</span>
           </div>
+          <button onClick={logout} title="Cerrar sesión"
+            className="w-8 h-8 rounded-[9px] grid place-items-center text-[var(--text-3)] hover:text-[var(--expense)] hover:bg-[var(--surface-2)] transition">
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </aside>
