@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, vapeProducts, vapeSales } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 
-export async function GET() {
+const biz = (v: string | null) => (v === "velene" ? "velene" : "vapes") as "vapes" | "velene";
+
+export async function GET(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const b = biz(req.nextUrl.searchParams.get("business"));
   const rows = await db.select({
     id: vapeSales.id, quantity: vapeSales.quantity, unitPrice: vapeSales.unitPrice,
     profit: vapeSales.profit, saleType: vapeSales.saleType, date: vapeSales.date,
     productName: vapeProducts.name, flavor: vapeProducts.flavor,
   }).from(vapeSales)
     .leftJoin(vapeProducts, eq(vapeSales.productId, vapeProducts.id))
-    .where(eq(vapeSales.userId, s.sub)).orderBy(desc(vapeSales.date)).limit(100);
+    .where(and(eq(vapeSales.userId, s.sub), eq(vapeSales.business, b)))
+    .orderBy(desc(vapeSales.date)).limit(100);
   return NextResponse.json({ sales: rows });
 }
 
@@ -22,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const p = z.object({
     productId: z.string().uuid(), quantity: z.number().int().positive(),
-    saleType: z.enum(["menudeo", "mayoreo"]),
+    saleType: z.enum(["menudeo", "mayoreo"]), business: z.enum(["vapes", "velene"]).default("vapes"),
   }).safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const [prod] = await db.select().from(vapeProducts).where(eq(vapeProducts.id, p.data.productId));
@@ -32,9 +36,8 @@ export async function POST(req: NextRequest) {
 
   const unitPrice = p.data.saleType === "menudeo" ? Number(prod.priceRetail) : Number(prod.priceWholesale);
   const profit = (unitPrice - Number(prod.unitCost)) * p.data.quantity;
-
   const [sale] = await db.insert(vapeSales).values({
-    userId: s.sub, productId: prod.id, quantity: p.data.quantity,
+    userId: s.sub, business: p.data.business, productId: prod.id, quantity: p.data.quantity,
     unitPrice: unitPrice.toFixed(2), profit: profit.toFixed(2), saleType: p.data.saleType,
   }).returning();
   await db.update(vapeProducts).set({ stock: prod.stock - p.data.quantity }).where(eq(vapeProducts.id, prod.id));

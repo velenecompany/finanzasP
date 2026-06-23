@@ -7,6 +7,8 @@ export const userRole = pgEnum("user_role", ["user", "admin"]);
 export const txType = pgEnum("tx_type", ["income", "expense"]);
 export const saleType = pgEnum("sale_type", ["menudeo", "mayoreo"]);
 export const moveType = pgEnum("move_type", ["in", "out", "adjust"]);
+export const business = pgEnum("business", ["vapes", "velene"]);
+export const capitalType = pgEnum("capital_type", ["injection", "withdrawal"]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -98,6 +100,7 @@ export const creditCardTransactions = pgTable("credit_card_transactions", {
 export const vapeProducts = pgTable("vape_products", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  business: business("business").default("vapes").notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   brand: varchar("brand", { length: 80 }),
   flavor: varchar("flavor", { length: 80 }),
@@ -120,6 +123,7 @@ export const vapeInventoryMovements = pgTable("vape_inventory_movements", {
 export const vapeSales = pgTable("vape_sales", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  business: business("business").default("vapes").notNull(),
   productId: uuid("product_id").references(() => vapeProducts.id, { onDelete: "set null" }),
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
@@ -131,10 +135,21 @@ export const vapeSales = pgTable("vape_sales", {
 export const vapeExpenses = pgTable("vape_expenses", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  business: business("business").default("vapes").notNull(),
   concept: varchar("concept", { length: 120 }).notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   date: timestamp("date").defaultNow().notNull(),
 }, (t) => ({ userIdx: index("ve_user_idx").on(t.userId) }));
+
+export const capitalMovements = pgTable("capital_movements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  business: business("business").notNull(),
+  type: capitalType("type").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  note: text("note"),
+  date: timestamp("date").defaultNow().notNull(),
+}, (t) => ({ userIdx: index("cap_user_idx").on(t.userId, t.business) }));
 
 export const aiChatSessions = pgTable("ai_chat_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),

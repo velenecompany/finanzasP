@@ -1,5 +1,5 @@
 import BusinessModule from "@/components/BusinessModule";
 export const dynamic = "force-dynamic";
 export default function Page() {
-  return <BusinessModule business="vapes" title="Negocio de Vapes" subtitle="Inventario, ventas, capital y utilidades" />;
+  return <BusinessModule business="velene" title="VELENÉ" subtitle="Inventario, ventas, capital y utilidades" />;
 }

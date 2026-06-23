@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Wallet, BarChart3, Target, Receipt,
-  CreditCard, Package, TrendingUp, Bot, FileText,
+  CreditCard, Package, TrendingUp, Bot, FileText, Sparkles,
 } from "lucide-react";
 
 const NAV = [
@@ -19,6 +19,7 @@ const NAV = [
   ]},
   { group: "Negocio", items: [
     { href: "/negocio/inventario", label: "Negocio Vapes", icon: Package },
+    { href: "/velene", label: "VELENÉ", icon: Sparkles },
     { href: "/negocio/crecimiento", label: "Crecimiento", icon: TrendingUp },
   ]},
   { group: "Inteligencia", items: [

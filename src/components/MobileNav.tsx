@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Wallet, Package, Bot, Menu, X,
-  BarChart3, Target, Receipt, CreditCard, TrendingUp, FileText, Settings, LogOut,
+  BarChart3, Target, Receipt, CreditCard, TrendingUp, FileText, Settings, LogOut, Sparkles,
 } from "lucide-react";
 
 const TABS = [
@@ -19,6 +19,7 @@ const MORE = [
   { href: "/metas", label: "Metas", icon: Target },
   { href: "/deudas", label: "Deudas", icon: Receipt },
   { href: "/tarjetas", label: "Tarjetas", icon: CreditCard },
+  { href: "/velene", label: "VELENÉ", icon: Sparkles },
   { href: "/negocio/crecimiento", label: "Crecimiento", icon: TrendingUp },
   { href: "/reportes", label: "Reportes", icon: FileText },
   { href: "/ajustes", label: "Ajustes", icon: Settings },

@@ -1,75 +1,74 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, Building2, TrendingUp, Settings2 } from "lucide-react";
-import { formatMXN, distributeIncome } from "@/lib/utils";
+import Link from "next/link";
+import { Package, Sparkles, ArrowRight } from "lucide-react";
+import { formatMXN } from "@/lib/utils";
+import { computeReparto, type Prefs } from "@/lib/settings";
 import Topbar from "@/components/Topbar";
 import TxModal from "@/components/TxModal";
 
-type Split = { expenses: number; goals: number; debts: number };
-
 export default function DashboardClient({
-  personal, income, expense, lastIncome, split,
-}: { personal: number; income: number; expense: number; lastIncome: number; split: Split }) {
+  vapesCapital, veleneCapital, income, expense, lastIncome, prefs,
+}: { vapesCapital: number; veleneCapital: number; income: number; expense: number; lastIncome: number; prefs: Prefs }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const dist = distributeIncome(lastIncome, split);
-
-  const buckets = [
-    { name: "Gastos", pct: split.expenses, amt: dist.expenses, color: "var(--expense)", grad: "rgba(242,118,107,.5)" },
-    { name: "Metas", pct: split.goals, amt: dist.goals, color: "var(--gold)", grad: "rgba(216,179,106,.5)" },
-    { name: "Deudas", pct: split.debts, amt: dist.debts, color: "var(--income)", grad: "rgba(52,216,160,.5)" },
-  ];
+  const total = vapesCapital + veleneCapital;
+  const rep = computeReparto(lastIncome, prefs);
 
   return (
     <>
       <Topbar title="Dashboard" subtitle="Resumen de tu patrimonio" onNew={() => setOpen(true)} />
       <div className="p-5 md:p-7 max-w-[1240px] w-full mx-auto animate-rise">
-        <div className="rounded-[20px] border border-[var(--border)] p-7 relative overflow-hidden"
+
+        <div className="rounded-[20px] border border-[var(--border)] p-6 md:p-7 relative overflow-hidden"
           style={{ background: "radial-gradient(120% 140% at 0% 0%,#11171a,#0d0f12 55%)" }}>
-          <div className="text-[11px] tracking-[0.14em] uppercase text-[var(--text-3)] font-semibold font-mono mb-2.5">Balance del mes</div>
-          <div className="text-[46px] font-extrabold tracking-tight leading-none tnum">{formatMXN(personal)}</div>
-          <div className="text-[13px] text-[var(--text-2)] mt-3 font-mono">
-            <span className="text-[var(--income)]">{formatMXN(income)} ingresos</span> · <span className="text-[var(--expense)]">{formatMXN(expense)} gastos</span>
+          <div className="text-[11px] tracking-[0.14em] uppercase text-[var(--text-3)] font-semibold font-mono mb-2.5">Capital total</div>
+          <div className="text-[38px] md:text-[46px] font-extrabold tracking-tight leading-none tnum">{formatMXN(total)}</div>
+          <div className="flex gap-4 mt-3 text-[13px] font-mono flex-wrap">
+            <span className="text-[var(--text-2)]"><span className="text-[var(--income)]">●</span> Vapes {formatMXN(vapesCapital)}</span>
+            <span className="text-[var(--text-2)]"><span className="text-[var(--gold)]">●</span> VELENÉ {formatMXN(veleneCapital)}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[18px] mt-[18px]">
-          {[
-            { label: "Ingresos del mes", val: formatMXN(income), icon: Wallet, color: "var(--income)" },
-            { label: "Gastos del mes", val: formatMXN(expense), icon: Building2, color: "var(--expense)" },
-            { label: "Balance", val: formatMXN(income - expense), icon: TrendingUp, color: "var(--text)" },
-            { label: "Último ingreso", val: formatMXN(lastIncome), icon: Wallet, color: "var(--text)" },
-          ].map((s) => (
-            <div key={s.label} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]">
-              <div className="w-[34px] h-[34px] rounded-[10px] grid place-items-center mb-3.5 bg-[var(--surface-2)]"><s.icon size={17} style={{ color: s.color }} /></div>
-              <div className="text-[12.5px] text-[var(--text-2)] font-medium">{s.label}</div>
-              <div className="text-[26px] font-bold tracking-tight mt-1 tnum" style={{ color: s.color }}>{s.val}</div>
+        <div className="grid grid-cols-2 gap-[14px] md:gap-[18px] mt-[18px]">
+          <Link href="/negocio/inventario" className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px] hover:border-[#272d36] transition group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-[34px] h-[34px] rounded-[10px] grid place-items-center bg-[var(--surface-2)]"><Package size={17} className="text-[var(--income)]" /></div>
+              <ArrowRight size={16} className="text-[var(--text-3)] group-hover:text-[var(--text)] transition" />
             </div>
-          ))}
+            <div className="text-[12.5px] text-[var(--text-2)]">Capital Vapes</div>
+            <div className="text-[22px] md:text-[26px] font-bold tnum mt-1">{formatMXN(vapesCapital)}</div>
+          </Link>
+          <Link href="/velene" className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px] hover:border-[#272d36] transition group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-[34px] h-[34px] rounded-[10px] grid place-items-center bg-[var(--surface-2)]"><Sparkles size={17} className="text-[var(--gold)]" /></div>
+              <ArrowRight size={16} className="text-[var(--text-3)] group-hover:text-[var(--text)] transition" />
+            </div>
+            <div className="text-[12.5px] text-[var(--text-2)]">Capital VELENÉ</div>
+            <div className="text-[22px] md:text-[26px] font-bold tnum mt-1">{formatMXN(veleneCapital)}</div>
+          </Link>
         </div>
 
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 mt-[18px] max-w-[520px]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-[14px] font-semibold">Distribución automática</div>
-              <div className="text-[11.5px] text-[var(--text-3)] mt-0.5">Último ingreso · {formatMXN(lastIncome)}</div>
-            </div>
-            <Settings2 size={16} className="text-[var(--text-2)]" />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {buckets.map((b) => (
-              <div key={b.name} className="text-center">
-                <div className="h-[150px] rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] relative overflow-hidden flex items-end">
-                  <div className="absolute top-3 left-0 right-0 font-mono text-[18px] font-semibold z-[2]" style={{ color: b.color }}>{b.pct}%</div>
-                  <div className="w-full rounded-b-[13px] transition-all duration-1000" style={{ height: `${b.pct}%`, background: `linear-gradient(180deg, ${b.grad}, transparent)` }} />
-                </div>
-                <div className="text-[12.5px] font-semibold mt-2.5">{b.name}</div>
-                <div className="text-[13px] text-[var(--text-2)] mt-0.5 tnum">{formatMXN(b.amt)}</div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-3 gap-[14px] md:gap-[18px] mt-[18px]">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Ingresos del mes</div><div className="text-[18px] md:text-[24px] font-bold tnum text-[var(--income)] mt-1">{formatMXN(income)}</div></div>
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Gastos del mes</div><div className="text-[18px] md:text-[24px] font-bold tnum text-[var(--expense)] mt-1">{formatMXN(expense)}</div></div>
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Balance del mes</div><div className="text-[18px] md:text-[24px] font-bold tnum mt-1">{formatMXN(income - expense)}</div></div>
         </div>
+
+        {lastIncome > 0 && (
+          <Link href="/finanzas" className="block bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 mt-[18px] hover:border-[#272d36] transition">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[14px] font-semibold">Reparto de tu último pago</div>
+              <span className="text-[12px] text-[var(--action)] font-semibold inline-flex items-center gap-1">Ver en Finanzas <ArrowRight size={13} /></span>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[12px] p-3 text-center"><div className="text-[11px] text-[var(--text-2)] mb-1">Colchón {prefs.splits.colchon}%</div><div className="text-[14px] font-bold tnum text-[var(--income)]">{formatMXN(rep.colchon)}</div></div>
+              <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[12px] p-3 text-center"><div className="text-[11px] text-[var(--text-2)] mb-1">Reinversión {prefs.splits.reinversion}%</div><div className="text-[14px] font-bold tnum text-[var(--action)]">{formatMXN(rep.reinversion)}</div></div>
+              <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[12px] p-3 text-center"><div className="text-[11px] text-[var(--text-2)] mb-1">Libre {prefs.splits.libre}%</div><div className="text-[14px] font-bold tnum text-[var(--gold)]">{formatMXN(rep.libre)}</div></div>
+            </div>
+          </Link>
+        )}
       </div>
 
       <TxModal open={open} onClose={() => setOpen(false)} onSaved={() => router.refresh()} initialType="income" />

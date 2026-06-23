@@ -1,5 +1,3 @@
-import Placeholder from "@/components/Placeholder";
+import AjustesClient from "@/components/AjustesClient";
 export const dynamic = "force-dynamic";
-export default function Page() {
-  return <Placeholder title="Ajustes" subtitle="Perfil, distribucion y notificaciones" />;
-}
+export default function Page() { return <AjustesClient />; }
