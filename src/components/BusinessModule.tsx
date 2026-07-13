@@ -13,7 +13,7 @@ type Capital = { capital: number; injections: number; withdrawals: number; profi
 
 const TABS = [["inventario", "Inventario", Package], ["ventas", "Ventas", ShoppingCart], ["gastos", "Gastos", ArrowDownCircle], ["capital", "Capital", Wallet], ["ganancias", "Ganancias", TrendingUp]] as const;
 
-export default function BusinessModule({ business, title, subtitle }: { business: "vapes" | "velene"; title: string; subtitle: string }) {
+export default function BusinessModule({ businessId, title, subtitle }: { businessId: string; title: string; subtitle: string }) {
   const [tab, setTab] = useState<string>("inventario");
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -28,7 +28,7 @@ export default function BusinessModule({ business, title, subtitle }: { business
   const [eForm, setEForm] = useState({ concept: "", amount: "" });
   const [cForm, setCForm] = useState({ type: "injection", amount: "", note: "" });
 
-  const q = `?business=${business}`;
+  const q = `?businessId=${businessId}`;
   const load = async () => {
     const [p, s, e, c] = await Promise.all([
       fetch("/api/vapes/products" + q), fetch("/api/vapes/sales" + q),
@@ -39,20 +39,20 @@ export default function BusinessModule({ business, title, subtitle }: { business
     setCap(await c.json());
     if (prods[0] && !sForm.productId) setSForm((f) => ({ ...f, productId: prods[0].id }));
   };
-  useEffect(() => { load(); }, [business]); // eslint-disable-line
+  useEffect(() => { load(); }, [businessId]); // eslint-disable-line
 
   async function saveProduct() {
     if (!pForm.name || !pForm.unitCost) return;
     setSaving(true);
     await fetch("/api/vapes/products", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ business, name: pForm.name, brand: pForm.brand, flavor: pForm.flavor, stock: parseInt(pForm.stock) || 0,
+      body: JSON.stringify({ businessId, name: pForm.name, brand: pForm.brand, flavor: pForm.flavor, stock: parseInt(pForm.stock) || 0,
         unitCost: parseFloat(pForm.unitCost) || 0, priceRetail: parseFloat(pForm.priceRetail) || 0, priceWholesale: parseFloat(pForm.priceWholesale) || 0 }) });
     setSaving(false); setModal(""); setPForm({ name: "", brand: "", flavor: "", stock: "", unitCost: "", priceRetail: "", priceWholesale: "" }); load();
   }
   async function saveSale() {
     setErr(""); setSaving(true);
     const res = await fetch("/api/vapes/sales", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ business, productId: sForm.productId, quantity: parseInt(sForm.quantity) || 1, saleType: sForm.saleType }) });
+      body: JSON.stringify({ businessId, productId: sForm.productId, quantity: parseInt(sForm.quantity) || 1, saleType: sForm.saleType }) });
     setSaving(false);
     if (res.ok) { setModal(""); setSForm({ ...sForm, quantity: "1" }); load(); }
     else setErr((await res.json()).error ?? "Error");
@@ -61,7 +61,7 @@ export default function BusinessModule({ business, title, subtitle }: { business
     if (!eForm.concept || !eForm.amount) return;
     setSaving(true);
     await fetch("/api/vapes/expenses", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ business, concept: eForm.concept, amount: parseFloat(eForm.amount) }) });
+      body: JSON.stringify({ businessId, concept: eForm.concept, amount: parseFloat(eForm.amount) }) });
     setSaving(false); setModal(""); setEForm({ concept: "", amount: "" }); load();
   }
   async function saveCapital() {
@@ -69,7 +69,7 @@ export default function BusinessModule({ business, title, subtitle }: { business
     if (!amt) return;
     setSaving(true);
     await fetch("/api/capital", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ business, type: cForm.type, amount: amt, note: cForm.note }) });
+      body: JSON.stringify({ businessId, type: cForm.type, amount: amt, note: cForm.note }) });
     setSaving(false); setModal(""); setCForm({ type: "injection", amount: "", note: "" }); load();
   }
   async function delProduct(id: string) { if (confirm("¿Eliminar este producto?")) { await fetch(`/api/vapes/products?id=${id}`, { method: "DELETE" }); load(); } }
@@ -207,10 +207,10 @@ export default function BusinessModule({ business, title, subtitle }: { business
       </div>
 
       <Modal open={modal === "product"} onClose={() => setModal("")} title="Nuevo producto">
-        <Field label="Producto"><input className={inputCls} placeholder={business === "velene" ? "Hoodie The Shalom" : "Elf Bar BC5000"} value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} /></Field>
+        <Field label="Producto"><input className={inputCls} placeholder="Nombre del producto" value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Marca" hint="(opc.)"><input className={inputCls} placeholder={business === "velene" ? "VELENÉ" : "Elf Bar"} value={pForm.brand} onChange={(e) => setPForm({ ...pForm, brand: e.target.value })} /></Field>
-          <Field label="Variante" hint="(opc.)"><input className={inputCls} placeholder={business === "velene" ? "Talla M / Negro" : "Fresa"} value={pForm.flavor} onChange={(e) => setPForm({ ...pForm, flavor: e.target.value })} /></Field>
+          <Field label="Marca" hint="(opc.)"><input className={inputCls} placeholder="Marca" value={pForm.brand} onChange={(e) => setPForm({ ...pForm, brand: e.target.value })} /></Field>
+          <Field label="Variante" hint="(opc.)"><input className={inputCls} placeholder="Variante / sabor / talla" value={pForm.flavor} onChange={(e) => setPForm({ ...pForm, flavor: e.target.value })} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Existencia"><input className={inputCls} type="number" placeholder="20" value={pForm.stock} onChange={(e) => setPForm({ ...pForm, stock: e.target.value })} /></Field>
@@ -234,7 +234,7 @@ export default function BusinessModule({ business, title, subtitle }: { business
       </Modal>
 
       <Modal open={modal === "expense"} onClose={() => setModal("")} title="Nuevo gasto del negocio">
-        <Field label="Concepto"><input className={inputCls} placeholder={business === "velene" ? "Producción / marketing" : "Compra de inventario"} value={eForm.concept} onChange={(e) => setEForm({ ...eForm, concept: e.target.value })} /></Field>
+        <Field label="Concepto"><input className={inputCls} placeholder="Compra de inventario, marketing..." value={eForm.concept} onChange={(e) => setEForm({ ...eForm, concept: e.target.value })} /></Field>
         <Field label="Monto"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={eForm.amount} onChange={(e) => setEForm({ ...eForm, amount: e.target.value })} /></Field>
         <button onClick={saveExpense} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar gasto"}</button>
       </Modal>

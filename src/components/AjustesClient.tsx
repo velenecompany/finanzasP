@@ -35,13 +35,6 @@ export default function AjustesClient() {
       <div className="p-5 md:p-7 max-w-[720px] w-full mx-auto animate-rise space-y-[18px]">
 
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5">
-          <div className="text-[14px] font-semibold mb-1">Capital de VELENÉ</div>
-          <div className="text-[12px] text-[var(--text-3)] mb-4">Se suma a tu capital de Vapes en el Dashboard. Actualízalo cuando quieras.</div>
-          <input className={inputCls} type="number" inputMode="decimal" value={prefs.veleneCapital}
-            onChange={(e) => setPrefs({ ...prefs, veleneCapital: num(e.target.value) })} />
-        </div>
-
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5">
           <div className="text-[14px] font-semibold mb-1">Gastos fijos semanales</div>
           <div className="text-[12px] text-[var(--text-3)] mb-4">Se apartan automáticamente de cada pago antes de repartir el resto.</div>
           <div className="grid grid-cols-3 gap-3">

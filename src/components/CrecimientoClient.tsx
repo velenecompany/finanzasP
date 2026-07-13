@@ -10,12 +10,13 @@ export default function CrecimientoClient() {
 
   useEffect(() => {
     (async () => {
-      const [s, e] = await Promise.all([fetch("/api/vapes/sales"), fetch("/api/vapes/expenses")]);
-      const sales = (await s.json()).sales ?? [];
-      const expenses = (await e.json()).expenses ?? [];
-      const profit = sales.reduce((a: number, v: { profit: string }) => a + Number(v.profit), 0);
-      const exp = expenses.reduce((a: number, x: { amount: string }) => a + Number(x.amount), 0);
-      setCurrent(Math.max(0, profit - exp));
+      const bs = (await (await fetch("/api/businesses")).json()).businesses ?? [];
+      let total = 0;
+      for (const b of bs) {
+        const c = await (await fetch(`/api/capital?businessId=${b.id}`)).json();
+        total += Number(c.capital ?? 0);
+      }
+      setCurrent(Math.max(0, total));
     })();
   }, []);
 

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
-import { db, vapeExpenses } from "@/lib/db";
+import { db, vapeExpenses, businesses } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-
-const biz = (v: string | null) => (v === "velene" ? "velene" : "vapes") as "vapes" | "velene";
 
 export async function GET(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const b = biz(req.nextUrl.searchParams.get("business"));
+  const bid = req.nextUrl.searchParams.get("businessId");
+  if (!bid) return NextResponse.json({ expenses: [] });
   const rows = await db.select().from(vapeExpenses)
-    .where(and(eq(vapeExpenses.userId, s.sub), eq(vapeExpenses.business, b)))
+    .where(and(eq(vapeExpenses.userId, s.sub), eq(vapeExpenses.businessId, bid)))
     .orderBy(desc(vapeExpenses.date)).limit(100);
   return NextResponse.json({ expenses: rows });
 }
@@ -19,12 +18,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const p = z.object({ concept: z.string().min(1), amount: z.number().positive(), business: z.enum(["vapes", "velene"]).default("vapes"), date: z.string().optional() })
+  const p = z.object({ businessId: z.string().uuid(), concept: z.string().min(1), amount: z.number().positive() })
     .safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const [row] = await db.insert(vapeExpenses).values({
-    userId: s.sub, business: p.data.business, concept: p.data.concept, amount: p.data.amount.toFixed(2),
-    date: p.data.date ? new Date(p.data.date) : new Date(),
+    userId: s.sub, businessId: p.data.businessId, concept: p.data.concept, amount: p.data.amount.toFixed(2),
   }).returning();
   return NextResponse.json({ expense: row }, { status: 201 });
 }
