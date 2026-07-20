@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   role: userRole("role").default("user").notNull(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   verifyToken: text("verify_token"),
+  verifyExpires: timestamp("verify_expires"),
+  onboarded: boolean("onboarded").default(false).notNull(),
   resetToken: text("reset_token"),
   resetExpires: timestamp("reset_expires"),
   splitExpenses: integer("split_expenses").default(50).notNull(),

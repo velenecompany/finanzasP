@@ -15,6 +15,9 @@ export default function RegisterPage() {
 
   const inputCls = "w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[11px] px-3.5 py-3 text-[13.5px] outline-none focus:border-[#2a3038]";
 
+  const pwChecks = { len: password.length >= 8, letter: /[a-zA-Z]/.test(password), num: /[0-9]/.test(password) };
+  const pwOk = pwChecks.len && pwChecks.letter && pwChecks.num;
+
   const setBiz = (i: number, v: string) => setBizList((l) => l.map((x, j) => (j === i ? v : x)));
   const addBiz = () => setBizList((l) => (l.length < 8 ? [...l, ""] : l));
   const removeBiz = (i: number) => setBizList((l) => l.filter((_, j) => j !== i));
@@ -43,8 +46,15 @@ export default function RegisterPage() {
       <label className="block text-[11.5px] font-semibold text-[var(--text-2)] mb-1.5">Correo</label>
       <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="tu@correo.com" className={inputCls + " mb-4"} />
 
-      <label className="block text-[11.5px] font-semibold text-[var(--text-2)] mb-1.5">Contraseña <span className="text-[var(--text-3)] font-normal">(mín. 8)</span></label>
-      <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" className={inputCls + " mb-5"} />
+      <label className="block text-[11.5px] font-semibold text-[var(--text-2)] mb-1.5">Contraseña</label>
+      <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" className={inputCls + (password ? " mb-2" : " mb-5")} />
+      {password && (
+        <div className="flex gap-3 mb-5 text-[11.5px]">
+          <span style={{ color: pwChecks.len ? "var(--income)" : "var(--text-3)" }}>{pwChecks.len ? "✓" : "○"} 8+ caracteres</span>
+          <span style={{ color: pwChecks.letter ? "var(--income)" : "var(--text-3)" }}>{pwChecks.letter ? "✓" : "○"} una letra</span>
+          <span style={{ color: pwChecks.num ? "var(--income)" : "var(--text-3)" }}>{pwChecks.num ? "✓" : "○"} un número</span>
+        </div>
+      )}
 
       <label className="block text-[11.5px] font-semibold text-[var(--text-2)] mb-1.5">Tus negocios <span className="text-[var(--text-3)] font-normal">(opcional)</span></label>
       <div className="space-y-2 mb-2">
@@ -59,7 +69,7 @@ export default function RegisterPage() {
         <button onClick={addBiz} className="text-[12.5px] font-semibold text-[var(--action)] inline-flex items-center gap-1.5 mb-5"><Plus size={14} /> Agregar otro negocio</button>
       )}
 
-      <button onClick={submit} disabled={loading} className="w-full bg-[var(--action)] text-white font-semibold text-[13.5px] py-3 rounded-[11px] hover:opacity-90 transition disabled:opacity-60 mt-1">
+      <button onClick={submit} disabled={loading || !pwOk} className="w-full bg-[var(--action)] text-white font-semibold text-[13.5px] py-3 rounded-[11px] hover:opacity-90 transition disabled:opacity-60 mt-1">
         {loading ? "Creando..." : "Crear cuenta"}
       </button>
       <p className="text-[12.5px] text-[var(--text-3)] text-center mt-5">
