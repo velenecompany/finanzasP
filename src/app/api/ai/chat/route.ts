@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
   if (!process.env.GROQ_API_KEY)
     return new Response("Falta GROQ_API_KEY en .env.local", { status: 500 });
 
+  // seguridad: la sesión debe pertenecer al usuario
+  if (sessionId) {
+    const [sess] = await db.select().from(aiChatSessions).where(eq(aiChatSessions.id, sessionId));
+    if (!sess || sess.userId !== s.sub) return new Response("No autorizado", { status: 403 });
+  }
+
   // historial de la sesión
   const history = sessionId
     ? await db.select().from(aiChatMessages).where(eq(aiChatMessages.sessionId, sessionId))

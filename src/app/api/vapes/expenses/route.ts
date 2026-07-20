@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
   const p = z.object({ businessId: z.string().uuid(), concept: z.string().min(1), amount: z.number().positive() })
     .safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  const [b] = await db.select().from(businesses).where(eq(businesses.id, p.data.businessId));
+  if (!b || b.userId !== s.sub) return NextResponse.json({ error: "Negocio inválido" }, { status: 403 });
   const [row] = await db.insert(vapeExpenses).values({
     userId: s.sub, businessId: p.data.businessId, concept: p.data.concept, amount: p.data.amount.toFixed(2),
   }).returning();

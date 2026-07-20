@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const cardId = req.nextUrl.searchParams.get("cardId");
   if (!cardId) return NextResponse.json({ transactions: [] });
+  const [card] = await db.select().from(creditCards).where(eq(creditCards.id, cardId));
+  if (!card || card.userId !== s.sub) return NextResponse.json({ transactions: [] });
   const rows = await db.select().from(creditCardTransactions)
     .where(eq(creditCardTransactions.cardId, cardId)).orderBy(desc(creditCardTransactions.date)).limit(30);
   return NextResponse.json({ transactions: rows });

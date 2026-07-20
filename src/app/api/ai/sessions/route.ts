@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const sessionId = req.nextUrl.searchParams.get("id");
   if (sessionId) {
+    const [sess] = await db.select().from(aiChatSessions).where(eq(aiChatSessions.id, sessionId));
+    if (!sess || sess.userId !== s.sub) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     const msgs = await db.select().from(aiChatMessages)
       .where(eq(aiChatMessages.sessionId, sessionId)).orderBy(asc(aiChatMessages.createdAt));
     return NextResponse.json({ messages: msgs });
