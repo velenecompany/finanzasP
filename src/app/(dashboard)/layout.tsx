@@ -11,8 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  const [user] = await db.select({ name: users.name, emailVerified: users.emailVerified })
+  const [user] = await db.select({ name: users.name, emailVerified: users.emailVerified, onboarded: users.onboarded })
     .from(users).where(eq(users.id, session.sub));
+  if (user && !user.onboarded) redirect("/bienvenida");
   const biz = await db.select({ id: businesses.id, name: businesses.name }).from(businesses)
     .where(eq(businesses.userId, session.sub)).orderBy(asc(businesses.createdAt));
 

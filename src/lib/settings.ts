@@ -6,7 +6,7 @@ export type Prefs = {
 
 export const DEFAULT_PREFS: Prefs = {
   veleneCapital: 0,
-  fixed: { carro: 2500, gasolina: 1300, comida: 800 },
+  fixed: { carro: 0, gasolina: 0, comida: 0 },
   splits: { colchon: 20, reinversion: 50, libre: 30 },
 };
 
