@@ -196,3 +196,35 @@ export const settings = pgTable("settings", {
   emailAlerts: boolean("email_alerts").default(true).notNull(),
   prefs: jsonb("prefs"),
 });
+
+export const financialProfile = pgTable("financial_profile", {
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).primaryKey(),
+  liquidCapital: numeric("liquid_capital", { precision: 14, scale: 2 }).default("0").notNull(),
+  tiedCapital: numeric("tied_capital", { precision: 14, scale: 2 }).default("0").notNull(),
+  totalDebt: numeric("total_debt", { precision: 14, scale: 2 }).default("0").notNull(),
+  debtDetail: jsonb("debt_detail"),
+  monthlyIncome: numeric("monthly_income", { precision: 14, scale: 2 }).default("0").notNull(),
+  monthlyExpenses: numeric("monthly_expenses", { precision: 14, scale: 2 }).default("0").notNull(),
+  incomePredictability: varchar("income_predictability", { length: 10 }),
+  incomeSources: integer("income_sources").default(1).notNull(),
+  mainSourceDependency: integer("main_source_dependency").default(100).notNull(),
+  cushionMonths: numeric("cushion_months", { precision: 5, scale: 1 }).default("0").notNull(),
+  cushionSeparated: boolean("cushion_separated").default(false).notNull(),
+  reinvestRate: integer("reinvest_rate").default(0).notNull(),
+  goal1y: text("goal_1y"),
+  goal3y: text("goal_3y"),
+  riskProfile: varchar("risk_profile", { length: 15 }),
+  completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const alerts = pgTable("alerts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  severity: varchar("severity", { length: 10 }).notNull(),
+  type: varchar("type", { length: 30 }).notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  message: text("message").notNull(),
+  dismissed: boolean("dismissed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({ userIdx: index("alerts_user_idx").on(t.userId, t.dismissed) }));

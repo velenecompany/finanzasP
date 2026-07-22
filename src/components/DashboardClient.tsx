@@ -6,6 +6,7 @@ import { Store, ArrowRight, Plus } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
 import { computeReparto, type Prefs } from "@/lib/settings";
 import Topbar from "@/components/Topbar";
+import AlertsBanner from "@/components/AlertsBanner";
 import TxModal from "@/components/TxModal";
 
 type Biz = { id: string; name: string; capital: number };
@@ -23,6 +24,7 @@ export default function DashboardClient({
     <>
       <Topbar title="Dashboard" subtitle="Resumen de tu patrimonio" onNew={() => setOpen(true)} />
       <div className="p-5 md:p-7 max-w-[1240px] w-full mx-auto animate-rise">
+        <AlertsBanner />
 
         <div className="rounded-[20px] border border-[var(--border)] p-6 md:p-7 relative overflow-hidden" style={{ background: "radial-gradient(120% 140% at 0% 0%,#11171a,#0d0f12 55%)" }}>
           <div className="text-[11px] tracking-[0.14em] uppercase text-[var(--text-3)] font-semibold font-mono mb-2.5">Capital total</div>
