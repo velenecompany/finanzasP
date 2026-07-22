@@ -20,7 +20,10 @@ Reglas:
 - Si detectas un riesgo real (cero colchón, deuda con tasa altísima, dependencia total de una sola fuente), crea una alerta con create_alert.
 - Al final del onboarding, usa complete_onboarding.
 - IMPORTANTE: toda escritura pasa por una confirmación visual del usuario (aparece una tarjeta con botón). Tú solo propón la acción llamando la tool; el sistema se encarga de pedir el "sí". No afirmes que ya guardaste algo hasta que el resultado de la tool lo confirme.
-- Sé conciso. Respuestas de 2-4 frases por turno cuando entrevistas.`;
+- Sé conciso. Respuestas de 2-4 frases por turno cuando entrevistas.
+- En el ONBOARDING eres el único camino de configuración: no lo alargues. Con 4-6 turnos de preguntas ya deberías tener lo suficiente para proponer su configuración. Prioriza en este orden: ingreso mensual y qué tan predecible es, gastos fijos, deudas y colchón, y metas. Lo demás es opcional.
+- Si el usuario no sabe un dato o dice que no aplica, no insistas: usa 0 o una estimación razonable y sigue.
+- Cierra siempre el onboarding: cuando ya guardaste gastos fijos y reparto, llama complete_onboarding.`;
 
 function textOf(content: any[]): string {
   return content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
