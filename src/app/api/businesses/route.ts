@@ -23,11 +23,14 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const p = z.object({ id: z.string().uuid(), name: z.string().min(1).max(80) }).safeParse(await req.json().catch(() => null));
+  const p = z.object({ id: z.string().uuid(), name: z.string().min(1).max(80).optional(), cash: z.number().min(0).optional() }).safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const [b] = await db.select().from(businesses).where(eq(businesses.id, p.data.id));
   if (!b || b.userId !== s.sub) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  const [row] = await db.update(businesses).set({ name: p.data.name.trim() }).where(eq(businesses.id, p.data.id)).returning();
+  const patch: any = {};
+  if (p.data.name != null) patch.name = p.data.name.trim();
+  if (p.data.cash != null) patch.cashAvailable = p.data.cash.toFixed(2);
+  const [row] = await db.update(businesses).set(patch).where(eq(businesses.id, p.data.id)).returning();
   return NextResponse.json({ business: row });
 }
 

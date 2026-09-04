@@ -103,6 +103,7 @@ export const businesses = pgTable("businesses", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   name: varchar("name", { length: 80 }).notNull(),
+  cashAvailable: numeric("cash_available", { precision: 14, scale: 2 }).default("0").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({ userIdx: index("biz_user_idx").on(t.userId) }));
 

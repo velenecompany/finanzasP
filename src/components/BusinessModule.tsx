@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Package, ShoppingCart, ArrowDownCircle, TrendingUp, Wallet, Trash2, ArrowUpCircle, PackagePlus } from "lucide-react";
+import { Plus, Package, ShoppingCart, ArrowDownCircle, TrendingUp, Wallet, Trash2, ArrowUpCircle, PackagePlus, Pencil } from "lucide-react";
 import { formatMXN, formatDate } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import Modal, { Field, inputCls } from "@/components/Modal";
@@ -21,7 +21,9 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cap, setCap] = useState<Capital | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [modal, setModal] = useState<"" | "product" | "sale" | "expense" | "capital" | "purchase">("");
+  const [cash, setCash] = useState(0);
+  const [cashInput, setCashInput] = useState("");
+  const [modal, setModal] = useState<"" | "product" | "sale" | "expense" | "capital" | "purchase" | "cash">("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -33,13 +35,16 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
 
   const q = `?businessId=${businessId}`;
   const load = async () => {
-    const [p, s, e, c, pu] = await Promise.all([
+    const [p, s, e, c, pu, bz] = await Promise.all([
       fetch("/api/vapes/products" + q), fetch("/api/vapes/sales" + q),
       fetch("/api/vapes/expenses" + q), fetch("/api/capital" + q), fetch("/api/purchases" + q),
+      fetch("/api/businesses"),
     ]);
     const prods = (await p.json()).products ?? [];
     setProducts(prods); setSales((await s.json()).sales ?? []); setExpenses((await e.json()).expenses ?? []);
     setCap(await c.json()); setPurchases((await pu.json()).purchases ?? []);
+    const mine = ((await bz.json()).businesses ?? []).find((x: any) => x.id === businessId);
+    if (mine) setCash(Number(mine.cashAvailable ?? 0));
     if (prods[0] && !sForm.productId) setSForm((f) => ({ ...f, productId: prods[0].id }));
   };
   useEffect(() => { load(); }, [businessId]); // eslint-disable-line
@@ -104,6 +109,13 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
     const pid = sForm.productId || (products[0]?.id ?? "");
     setErr(""); setSForm((f) => ({ ...f, productId: pid, unitPrice: listPriceFor(pid, f.saleType) })); setModal("sale");
   }
+  function openCash() { setCashInput(String(cash || "")); setModal("cash"); }
+  async function saveCash() {
+    setSaving(true);
+    const val = Math.max(0, parseFloat(cashInput) || 0);
+    await fetch("/api/businesses", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: businessId, cash: val }) });
+    setCash(val); setSaving(false); setModal("");
+  }
 
   const invValue = products.reduce((s, p) => s + p.stock * Number(p.unitCost), 0);
   const totalProfit = sales.reduce((s, v) => s + Number(v.profit), 0);
@@ -115,8 +127,12 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
     <>
       <Topbar title={title} subtitle={subtitle} />
       <div className="p-5 md:p-7 max-w-[1240px] w-full mx-auto animate-rise">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] md:gap-[18px] mb-[18px]">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-[14px] md:gap-[18px] mb-[18px]">
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Capital del negocio</div><div className="text-[22px] md:text-[24px] font-bold tnum text-[var(--income)] mt-1">{formatMXN(cap?.capital ?? 0)}</div></div>
+          <button onClick={openCash} className="text-left bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px] hover:border-[#272d36] transition group">
+            <div className="flex items-center justify-between"><div className="text-[12.5px] text-[var(--text-2)]">Disponible (efectivo/banco)</div><Pencil size={13} className="text-[var(--text-3)] group-hover:text-[var(--text)]" /></div>
+            <div className="text-[22px] md:text-[24px] font-bold tnum mt-1">{formatMXN(cash)}</div>
+          </button>
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Valor inventario</div><div className="text-[22px] md:text-[24px] font-bold tnum mt-1">{formatMXN(invValue)}</div></div>
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Utilidad ventas</div><div className="text-[22px] md:text-[24px] font-bold tnum mt-1">{formatMXN(totalProfit)}</div></div>
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12.5px] text-[var(--text-2)]">Stock bajo</div><div className="text-[22px] md:text-[24px] font-bold tnum mt-1" style={{ color: lowStock ? "var(--expense)" : "var(--text)" }}>{lowStock}</div></div>
@@ -318,6 +334,12 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
         <Field label="Concepto"><input className={inputCls} placeholder="Compra de inventario, marketing..." value={eForm.concept} onChange={(e) => setEForm({ ...eForm, concept: e.target.value })} /></Field>
         <Field label="Monto"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={eForm.amount} onChange={(e) => setEForm({ ...eForm, amount: e.target.value })} /></Field>
         <button onClick={saveExpense} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar gasto"}</button>
+      </Modal>
+
+      <Modal open={modal === "cash"} onClose={() => setModal("")} title="Disponible en efectivo/banco">
+        <p className="text-[12px] text-[var(--text-3)] mb-3">Registra cuánto dinero líquido tienes de este negocio (efectivo + banco). Actualízalo cuando cambie.</p>
+        <Field label="Monto disponible"><input autoFocus className={inputCls} type="number" inputMode="decimal" placeholder="0" value={cashInput} onChange={(e) => setCashInput(e.target.value)} /></Field>
+        <button onClick={saveCash} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Guardar"}</button>
       </Modal>
 
       <Modal open={modal === "purchase"} onClose={() => setModal("")} title="Registrar salida de dinero">
