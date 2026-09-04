@@ -46,7 +46,7 @@ export default function AjustesClient() {
               </div>
             ))}
           </div>
-          <div className="mt-3 text-[12px] text-[var(--text-2)] font-mono">Total fijos: {formatMXN(prefs.fixed.carro + prefs.fixed.gasolina + prefs.fixed.comida)}/semana</div>
+          <div className="mt-3 text-[12px] text-[var(--text-2)] font-mono">Total: {formatMXN(prefs.fixed.carro + prefs.fixed.gasolina + prefs.fixed.comida)}/semana · {formatMXN((prefs.fixed.carro + prefs.fixed.gasolina + prefs.fixed.comida) * 4)}/mes</div>
         </div>
 
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5">

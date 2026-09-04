@@ -111,6 +111,8 @@ export const vapeProducts = pgTable("vape_products", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   business: business("business").default("vapes").notNull(),
   businessId: uuid("business_id").references(() => businesses.id, { onDelete: "cascade" }),
+  purchaseId: uuid("purchase_id"),
+  investedAmount: numeric("invested_amount", { precision: 14, scale: 2 }),
   name: varchar("name", { length: 120 }).notNull(),
   brand: varchar("brand", { length: 80 }),
   flavor: varchar("flavor", { length: 80 }),
@@ -228,3 +230,12 @@ export const alerts = pgTable("alerts", {
   dismissed: boolean("dismissed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({ userIdx: index("alerts_user_idx").on(t.userId, t.dismissed) }));
+
+export const inventoryPurchases = pgTable("inventory_purchases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  businessId: uuid("business_id").references(() => businesses.id, { onDelete: "cascade" }).notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  note: text("note"),
+  date: timestamp("date").defaultNow().notNull(),
+}, (t) => ({ userBizIdx: index("purchases_user_biz_idx").on(t.userId, t.businessId) }));

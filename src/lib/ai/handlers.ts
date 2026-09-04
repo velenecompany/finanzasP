@@ -40,7 +40,10 @@ async function readFinances(userId: string) {
     mesActual: { ingresos: monthIncome, gastos: monthExpense, balance: monthIncome - monthExpense },
     deudas: debtRows.map((d) => ({ acreedor: d.creditor, saldo: Number(d.remaining), tasa: Number(d.interestRate ?? 0) })),
     tarjetas: cardRows.map((c) => ({ nombre: c.name, limite: Number(c.creditLimit), saldo: Number(c.currentBalance) })),
-    gastosFijosMensuales: { ...prefs.fixed, total: monthlyFixed },
+    gastosFijos: {
+      semanal: { ...prefs.fixed, total: monthlyFixed },
+      mensual: { carro: prefs.fixed.carro * 4, gasolina: prefs.fixed.gasolina * 4, comida: prefs.fixed.comida * 4, total: monthlyFixed * 4 },
+    },
     reparto: prefs.splits,
   };
 }
@@ -82,8 +85,9 @@ export async function runTool(name: string, input: any, userId: string): Promise
     }
 
     case "update_fixed_expenses": {
-      const next = await mergeSettings(userId, { fixed: { carro: Number(input.carro) || 0, gasolina: Number(input.gasolina) || 0, comida: Number(input.comida) || 0 } });
-      return { ok: true, fixed: next.fixed };
+      const mensual = { carro: Number(input.carro) || 0, gasolina: Number(input.gasolina) || 0, comida: Number(input.comida) || 0 };
+      const next = await mergeSettings(userId, { fixed: { carro: mensual.carro / 4, gasolina: mensual.gasolina / 4, comida: mensual.comida / 4 } });
+      return { ok: true, mensual, semanal: next.fixed };
     }
 
     case "update_split": {

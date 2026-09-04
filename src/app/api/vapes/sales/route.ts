@@ -21,13 +21,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const p = z.object({ businessId: z.string().uuid(), productId: z.string().uuid(), quantity: z.number().int().positive(), saleType: z.enum(["menudeo", "mayoreo"]) })
+  const p = z.object({ businessId: z.string().uuid(), productId: z.string().uuid(), quantity: z.number().int().positive(), saleType: z.enum(["menudeo", "mayoreo"]), unitPrice: z.number().min(0).optional() })
     .safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   const [prod] = await db.select().from(vapeProducts).where(eq(vapeProducts.id, p.data.productId));
   if (!prod || prod.userId !== s.sub) return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
   if (prod.stock < p.data.quantity) return NextResponse.json({ error: `Stock insuficiente (disponible: ${prod.stock})` }, { status: 400 });
-  const unitPrice = p.data.saleType === "menudeo" ? Number(prod.priceRetail) : Number(prod.priceWholesale);
+  const listPrice = p.data.saleType === "menudeo" ? Number(prod.priceRetail) : Number(prod.priceWholesale);
+  const unitPrice = p.data.unitPrice != null ? p.data.unitPrice : listPrice;
   const profit = (unitPrice - Number(prod.unitCost)) * p.data.quantity;
   const [sale] = await db.insert(vapeSales).values({
     userId: s.sub, businessId: p.data.businessId, productId: prod.id, quantity: p.data.quantity,

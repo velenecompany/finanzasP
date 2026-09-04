@@ -63,6 +63,7 @@ export default function OnboardingClient({ name }: { name: string }) {
             <AdvisorChat
               starter="Hola, acabo de crear mi cuenta. Ayúdame a configurar mis finanzas: hazme el diagnóstico y deja lista mi configuración."
               onComplete={() => { router.push("/dashboard"); router.refresh(); }}
+              onFallback={skip}
             />
           </div>
         )}

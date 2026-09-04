@@ -4,7 +4,7 @@ import { Send, Check, X, Sparkles, ShieldCheck } from "lucide-react";
 
 type Pending = { id: string; name: string; input: any; summary: string } | null;
 
-export default function AdvisorChat({ starter, onComplete }: { starter?: string; onComplete?: () => void }) {
+export default function AdvisorChat({ starter, onComplete, onFallback }: { starter?: string; onComplete?: () => void; onFallback?: () => void }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,16 @@ export default function AdvisorChat({ starter, onComplete }: { starter?: string;
             </div>
           </div>
         )}
-        {error && <div className="text-[12.5px] text-[var(--expense)] bg-[var(--expense-soft)] rounded-[10px] px-3 py-2">{error}</div>}
+        {error && (
+          <div className="bg-[var(--surface)] border border-[var(--expense)] rounded-2xl p-4">
+            <div className="text-[13px] font-semibold text-[var(--expense)] mb-1">El asesor no está disponible ahora</div>
+            <p className="text-[12.5px] text-[var(--text-2)] mb-3">{error}</p>
+            <div className="flex gap-2">
+              <button onClick={() => { setError(""); call({ messages }); }} className="flex-1 bg-[var(--surface-2)] border border-[var(--border)] text-[13px] font-semibold py-2.5 rounded-[10px]">Reintentar</button>
+              {onFallback && <button onClick={onFallback} className="flex-1 bg-[var(--action)] text-white text-[13px] font-semibold py-2.5 rounded-[10px]">Continuar sin el asesor</button>}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-[var(--border)] pt-3 mt-2">

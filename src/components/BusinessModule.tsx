@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Package, ShoppingCart, ArrowDownCircle, TrendingUp, Wallet, Trash2, ArrowUpCircle } from "lucide-react";
+import { Plus, Package, ShoppingCart, ArrowDownCircle, TrendingUp, Wallet, Trash2, ArrowUpCircle, PackagePlus } from "lucide-react";
 import { formatMXN, formatDate } from "@/lib/utils";
 import Topbar from "@/components/Topbar";
 import Modal, { Field, inputCls } from "@/components/Modal";
@@ -10,8 +10,9 @@ type Sale = { id: string; quantity: number; unitPrice: string; profit: string; s
 type Expense = { id: string; concept: string; amount: string; date: string };
 type CapMov = { id: string; type: string; amount: string; note: string | null; date: string };
 type Capital = { capital: number; injections: number; withdrawals: number; profit: number; expense: number; movements: CapMov[] };
+type Purchase = { id: string; amount: number; note: string | null; date: string; invertido: number; restante: number; productos: { name: string; invested: number }[] };
 
-const TABS = [["inventario", "Inventario", Package], ["ventas", "Ventas", ShoppingCart], ["gastos", "Gastos", ArrowDownCircle], ["capital", "Capital", Wallet], ["ganancias", "Ganancias", TrendingUp]] as const;
+const TABS = [["inventario", "Inventario", Package], ["ventas", "Ventas", ShoppingCart], ["gastos", "Gastos", ArrowDownCircle], ["salidas", "Salidas", PackagePlus], ["capital", "Capital", Wallet], ["ganancias", "Ganancias", TrendingUp]] as const;
 
 export default function BusinessModule({ businessId, title, subtitle }: { businessId: string; title: string; subtitle: string }) {
   const [tab, setTab] = useState<string>("inventario");
@@ -19,24 +20,26 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cap, setCap] = useState<Capital | null>(null);
-  const [modal, setModal] = useState<"" | "product" | "sale" | "expense" | "capital">("");
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [modal, setModal] = useState<"" | "product" | "sale" | "expense" | "capital" | "purchase">("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const [pForm, setPForm] = useState({ name: "", brand: "", flavor: "", stock: "", unitCost: "", priceRetail: "", priceWholesale: "" });
-  const [sForm, setSForm] = useState({ productId: "", quantity: "1", saleType: "menudeo" });
+  const [pForm, setPForm] = useState({ name: "", brand: "", flavor: "", stock: "", unitCost: "", priceRetail: "", priceWholesale: "", purchaseId: "" });
+  const [sForm, setSForm] = useState({ productId: "", quantity: "1", saleType: "menudeo", unitPrice: "" });
   const [eForm, setEForm] = useState({ concept: "", amount: "" });
   const [cForm, setCForm] = useState({ type: "injection", amount: "", note: "" });
+  const [puForm, setPuForm] = useState({ amount: "", note: "" });
 
   const q = `?businessId=${businessId}`;
   const load = async () => {
-    const [p, s, e, c] = await Promise.all([
+    const [p, s, e, c, pu] = await Promise.all([
       fetch("/api/vapes/products" + q), fetch("/api/vapes/sales" + q),
-      fetch("/api/vapes/expenses" + q), fetch("/api/capital" + q),
+      fetch("/api/vapes/expenses" + q), fetch("/api/capital" + q), fetch("/api/purchases" + q),
     ]);
     const prods = (await p.json()).products ?? [];
     setProducts(prods); setSales((await s.json()).sales ?? []); setExpenses((await e.json()).expenses ?? []);
-    setCap(await c.json());
+    setCap(await c.json()); setPurchases((await pu.json()).purchases ?? []);
     if (prods[0] && !sForm.productId) setSForm((f) => ({ ...f, productId: prods[0].id }));
   };
   useEffect(() => { load(); }, [businessId]); // eslint-disable-line
@@ -46,15 +49,16 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
     setSaving(true);
     await fetch("/api/vapes/products", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ businessId, name: pForm.name, brand: pForm.brand, flavor: pForm.flavor, stock: parseInt(pForm.stock) || 0,
-        unitCost: parseFloat(pForm.unitCost) || 0, priceRetail: parseFloat(pForm.priceRetail) || 0, priceWholesale: parseFloat(pForm.priceWholesale) || 0 }) });
-    setSaving(false); setModal(""); setPForm({ name: "", brand: "", flavor: "", stock: "", unitCost: "", priceRetail: "", priceWholesale: "" }); load();
+        unitCost: parseFloat(pForm.unitCost) || 0, priceRetail: parseFloat(pForm.priceRetail) || 0, priceWholesale: parseFloat(pForm.priceWholesale) || 0,
+        purchaseId: pForm.purchaseId || undefined }) });
+    setSaving(false); setModal(""); setPForm({ name: "", brand: "", flavor: "", stock: "", unitCost: "", priceRetail: "", priceWholesale: "", purchaseId: "" }); load();
   }
   async function saveSale() {
     setErr(""); setSaving(true);
     const res = await fetch("/api/vapes/sales", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessId, productId: sForm.productId, quantity: parseInt(sForm.quantity) || 1, saleType: sForm.saleType }) });
+      body: JSON.stringify({ businessId, productId: sForm.productId, quantity: parseInt(sForm.quantity) || 1, saleType: sForm.saleType, unitPrice: sForm.unitPrice === "" ? undefined : parseFloat(sForm.unitPrice) }) });
     setSaving(false);
-    if (res.ok) { setModal(""); setSForm({ ...sForm, quantity: "1" }); load(); }
+    if (res.ok) { setModal(""); setSForm({ ...sForm, quantity: "1", unitPrice: "" }); load(); }
     else setErr((await res.json()).error ?? "Error");
   }
   async function saveExpense() {
@@ -76,6 +80,30 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
   async function delSale(id: string) { if (confirm("¿Eliminar esta venta? Se devolverá el stock.")) { await fetch(`/api/vapes/sales?id=${id}`, { method: "DELETE" }); load(); } }
   async function delExpense(id: string) { if (confirm("¿Eliminar este gasto?")) { await fetch(`/api/vapes/expenses?id=${id}`, { method: "DELETE" }); load(); } }
   async function delCapital(id: string) { if (confirm("¿Eliminar este movimiento de capital?")) { await fetch(`/api/capital?id=${id}`, { method: "DELETE" }); load(); } }
+
+  async function savePurchase() {
+    const amt = parseFloat(puForm.amount);
+    if (!amt) return;
+    setSaving(true);
+    await fetch("/api/purchases", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ businessId, amount: amt, note: puForm.note }) });
+    setSaving(false); setModal(""); setPuForm({ amount: "", note: "" }); load();
+  }
+  async function delPurchase(id: string) {
+    if (!confirm("¿Eliminar esta salida? Los productos ligados quedarán sin salida.")) return;
+    await fetch(`/api/purchases?id=${id}`, { method: "DELETE" }); load();
+  }
+
+  // Precio de lista según producto + tipo (para precargar la venta, editable)
+  function listPriceFor(productId: string, type: string): string {
+    const prod = products.find((x) => x.id === productId);
+    if (!prod) return "";
+    return String(Number(type === "menudeo" ? prod.priceRetail : prod.priceWholesale));
+  }
+  function openSale() {
+    const pid = sForm.productId || (products[0]?.id ?? "");
+    setErr(""); setSForm((f) => ({ ...f, productId: pid, unitPrice: listPriceFor(pid, f.saleType) })); setModal("sale");
+  }
 
   const invValue = products.reduce((s, p) => s + p.stock * Number(p.unitCost), 0);
   const totalProfit = sales.reduce((s, v) => s + Number(v.profit), 0);
@@ -132,7 +160,7 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="text-[14px] font-semibold">Historial de ventas</div>
-              <button onClick={() => { setErr(""); setModal("sale"); }} disabled={!products.length} className="inline-flex items-center gap-2 bg-[var(--action)] text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:opacity-90 transition disabled:opacity-40"><Plus size={15} strokeWidth={2.2} /> Registrar venta</button>
+              <button onClick={openSale} disabled={!products.length} className="inline-flex items-center gap-2 bg-[var(--action)] text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:opacity-90 transition disabled:opacity-40"><Plus size={15} strokeWidth={2.2} /> Registrar venta</button>
             </div>
             {sales.length === 0 ? <div className="text-center py-8 text-[var(--text-3)] text-[13px]">Sin ventas registradas.</div> : (
               <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr className="text-[11px] uppercase text-[var(--text-3)] font-semibold">
@@ -197,6 +225,49 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
           </>
         )}
 
+        {tab === "salidas" && (
+          <>
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 mb-[18px]">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[14px] font-semibold">Salidas de dinero</div>
+                <button onClick={() => setModal("purchase")} className="inline-flex items-center gap-2 bg-[var(--action)] text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:opacity-90 transition"><Plus size={15} strokeWidth={2.2} /> Registrar salida</button>
+              </div>
+              <p className="text-[12px] text-[var(--text-3)]">Dinero que sacas para comprar mercancía. Al dar de alta un producto, elige de qué salida viene y aquí verás cuánto ya convertiste en inventario.</p>
+            </div>
+            {purchases.length === 0 ? (
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-8 text-center text-[var(--text-3)] text-[13px]">Sin salidas registradas.</div>
+            ) : (
+              <div className="space-y-[14px]">
+                {purchases.map((pu) => {
+                  const pct = pu.amount > 0 ? Math.min(100, Math.round((pu.invertido / pu.amount) * 100)) : 0;
+                  return (
+                    <div key={pu.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[14px] font-semibold">{pu.note || "Salida de dinero"}</div>
+                          <div className="text-[11.5px] text-[var(--text-3)]">{formatDate(pu.date)}</div>
+                        </div>
+                        <button onClick={() => delPurchase(pu.id)} className="text-[var(--text-3)] hover:text-[var(--expense)] transition shrink-0"><Trash2 size={15} /></button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2.5 mt-3">
+                        <div><div className="text-[11px] text-[var(--text-3)]">Salida</div><div className="text-[15px] font-bold tnum">{formatMXN(pu.amount)}</div></div>
+                        <div><div className="text-[11px] text-[var(--text-3)]">En inventario</div><div className="text-[15px] font-bold tnum text-[var(--income)]">{formatMXN(pu.invertido)}</div></div>
+                        <div><div className="text-[11px] text-[var(--text-3)]">Restante</div><div className="text-[15px] font-bold tnum" style={{ color: pu.restante < 0 ? "var(--expense)" : "var(--text)" }}>{formatMXN(pu.restante)}</div></div>
+                      </div>
+                      <div className="h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden mt-3"><div className="h-full rounded-full bg-[var(--income)] transition-all" style={{ width: pct + "%" }} /></div>
+                      {pu.productos.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {pu.productos.map((x, i) => <span key={i} className="text-[11.5px] px-2 py-1 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-2)]">{x.name} · {formatMXN(x.invested)}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {tab === "ganancias" && (
           <div className="grid md:grid-cols-3 gap-[18px]">
             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5"><div className="text-[12.5px] text-[var(--text-2)]">Ingresos totales</div><div className="text-[26px] font-bold tnum mt-1">{formatMXN(totalRevenue)}</div></div>
@@ -220,16 +291,26 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
           <Field label="Precio menudeo"><input className={inputCls} type="number" inputMode="decimal" placeholder="180" value={pForm.priceRetail} onChange={(e) => setPForm({ ...pForm, priceRetail: e.target.value })} /></Field>
           <Field label="Precio mayoreo"><input className={inputCls} type="number" inputMode="decimal" placeholder="140" value={pForm.priceWholesale} onChange={(e) => setPForm({ ...pForm, priceWholesale: e.target.value })} /></Field>
         </div>
+        {purchases.length > 0 && (
+          <Field label="¿Viene de una salida de dinero?" hint="(opcional)">
+            <select className={inputCls + " appearance-none cursor-pointer"} value={pForm.purchaseId} onChange={(e) => setPForm({ ...pForm, purchaseId: e.target.value })}>
+              <option value="">— Ninguna —</option>
+              {purchases.map((pu) => <option key={pu.id} value={pu.id}>{(pu.note || "Salida")} · restante {formatMXN(pu.restante)}</option>)}
+            </select>
+          </Field>
+        )}
         <button onClick={saveProduct} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Agregar producto"}</button>
       </Modal>
 
       <Modal open={modal === "sale"} onClose={() => setModal("")} title="Registrar venta">
         {err && <div className="mb-3 text-[12.5px] text-[var(--expense)] bg-[var(--expense-soft)] rounded-[10px] px-3 py-2">{err}</div>}
-        <Field label="Producto"><select className={inputCls + " appearance-none cursor-pointer"} value={sForm.productId} onChange={(e) => setSForm({ ...sForm, productId: e.target.value })}>{products.map((p) => <option key={p.id} value={p.id}>{p.brand ? p.brand + " " : ""}{p.name} {p.flavor ? `(${p.flavor})` : ""} — stock {p.stock}</option>)}</select></Field>
+        <Field label="Producto"><select className={inputCls + " appearance-none cursor-pointer"} value={sForm.productId} onChange={(e) => setSForm({ ...sForm, productId: e.target.value, unitPrice: listPriceFor(e.target.value, sForm.saleType) })}>{products.map((p) => <option key={p.id} value={p.id}>{p.brand ? p.brand + " " : ""}{p.name} {p.flavor ? `(${p.flavor})` : ""} — stock {p.stock}</option>)}</select></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cantidad"><input className={inputCls} type="number" min="1" value={sForm.quantity} onChange={(e) => setSForm({ ...sForm, quantity: e.target.value })} /></Field>
-          <Field label="Tipo"><select className={inputCls + " appearance-none cursor-pointer"} value={sForm.saleType} onChange={(e) => setSForm({ ...sForm, saleType: e.target.value })}><option value="menudeo">Menudeo</option><option value="mayoreo">Mayoreo</option></select></Field>
+          <Field label="Tipo"><select className={inputCls + " appearance-none cursor-pointer"} value={sForm.saleType} onChange={(e) => setSForm({ ...sForm, saleType: e.target.value, unitPrice: listPriceFor(sForm.productId, e.target.value) })}><option value="menudeo">Menudeo</option><option value="mayoreo">Mayoreo</option></select></Field>
         </div>
+        <Field label="Precio de venta (c/u)" hint="editable"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={sForm.unitPrice} onChange={(e) => setSForm({ ...sForm, unitPrice: e.target.value })} /></Field>
+        <div className="text-[12px] text-[var(--text-2)] mb-1 font-mono">Total de la venta: {formatMXN((parseFloat(sForm.unitPrice) || 0) * (parseInt(sForm.quantity) || 0))}</div>
         <button onClick={saveSale} disabled={saving} className="w-full bg-[var(--income)] text-[#04130d] font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar venta"}</button>
       </Modal>
 
@@ -237,6 +318,12 @@ export default function BusinessModule({ businessId, title, subtitle }: { busine
         <Field label="Concepto"><input className={inputCls} placeholder="Compra de inventario, marketing..." value={eForm.concept} onChange={(e) => setEForm({ ...eForm, concept: e.target.value })} /></Field>
         <Field label="Monto"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={eForm.amount} onChange={(e) => setEForm({ ...eForm, amount: e.target.value })} /></Field>
         <button onClick={saveExpense} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar gasto"}</button>
+      </Modal>
+
+      <Modal open={modal === "purchase"} onClose={() => setModal("")} title="Registrar salida de dinero">
+        <Field label="Monto que sacas"><input className={inputCls} type="number" inputMode="decimal" placeholder="0" value={puForm.amount} onChange={(e) => setPuForm({ ...puForm, amount: e.target.value })} /></Field>
+        <Field label="¿Para qué es?" hint="(opcional)"><input className={inputCls} placeholder="Compra de mercancía, drop nuevo..." value={puForm.note} onChange={(e) => setPuForm({ ...puForm, note: e.target.value })} /></Field>
+        <button onClick={savePurchase} disabled={saving} className="w-full bg-[var(--action)] text-white font-semibold text-[13px] py-3 rounded-[10px] mt-2 hover:opacity-90 transition disabled:opacity-60">{saving ? "Guardando..." : "Registrar salida"}</button>
       </Modal>
 
       <Modal open={modal === "capital"} onClose={() => setModal("")} title={cForm.type === "injection" ? "Inyectar capital" : "Retirar capital"}>

@@ -39,7 +39,7 @@ export const TOOLS = [
   },
   {
     name: "update_fixed_expenses",
-    description: "Escribe los gastos fijos mensuales del usuario. REQUIERE CONFIRMACIÓN del usuario.",
+    description: "Escribe los gastos fijos del usuario. Los montos van en MENSUAL; el sistema los divide entre 4 para apartar de cada pago semanal. REQUIERE CONFIRMACIÓN.",
     input_schema: {
       type: "object",
       properties: {

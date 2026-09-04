@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
-import { db, vapeProducts, businesses } from "@/lib/db";
+import { db, vapeProducts, businesses, inventoryPurchases } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 
 async function owns(userId: string, businessId: string) {
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
 const schema = z.object({
   businessId: z.string().uuid(), name: z.string().min(1), brand: z.string().optional(), flavor: z.string().optional(),
   stock: z.number().int().min(0), unitCost: z.number().min(0), priceRetail: z.number().min(0), priceWholesale: z.number().min(0),
+  purchaseId: z.string().uuid().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -30,9 +31,17 @@ export async function POST(req: NextRequest) {
   if (!p.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   if (!(await owns(s.sub, p.data.businessId))) return NextResponse.json({ error: "Negocio inválido" }, { status: 403 });
   const d = p.data;
+  // Si viene de una salida de dinero, validar que sea del usuario y guardar lo invertido
+  let purchaseId: string | null = null;
+  let invested: string | null = null;
+  if (d.purchaseId) {
+    const [pu] = await db.select().from(inventoryPurchases).where(eq(inventoryPurchases.id, d.purchaseId));
+    if (pu && pu.userId === s.sub) { purchaseId = pu.id; invested = (d.unitCost * d.stock).toFixed(2); }
+  }
   const [row] = await db.insert(vapeProducts).values({
     userId: s.sub, businessId: d.businessId, name: d.name, brand: d.brand ?? null, flavor: d.flavor ?? null,
     stock: d.stock, unitCost: d.unitCost.toFixed(2), priceRetail: d.priceRetail.toFixed(2), priceWholesale: d.priceWholesale.toFixed(2),
+    purchaseId, investedAmount: invested,
   }).returning();
   return NextResponse.json({ product: row }, { status: 201 });
 }
