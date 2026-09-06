@@ -14,8 +14,16 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const body = await req.json().catch(() => null);
-  const prefs = mergePrefs(body);
+  const body = (await req.json().catch(() => null)) ?? {};
+  // Merge con lo YA guardado para no borrar otras preferencias en updates parciales
+  const [row] = await db.select().from(settings).where(eq(settings.userId, s.sub));
+  const current = row ? mergePrefs(row.prefs) : DEFAULT_PREFS;
+  const merged = {
+    ...current, ...body,
+    fixed: { ...current.fixed, ...(body.fixed ?? {}) },
+    splits: { ...current.splits, ...(body.splits ?? {}) },
+  };
+  const prefs = mergePrefs(merged);
   await db.insert(settings).values({ userId: s.sub, prefs })
     .onConflictDoUpdate({ target: settings.userId, set: { prefs } });
   return NextResponse.json({ prefs });

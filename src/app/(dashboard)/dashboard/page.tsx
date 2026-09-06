@@ -1,4 +1,4 @@
-import { and, asc, eq, gte } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db, transactions, vapeSales, vapeExpenses, capitalMovements, settings, businesses } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { mergePrefs, DEFAULT_PREFS } from "@/lib/settings";
@@ -10,13 +10,13 @@ export default async function DashboardPage() {
   const session = await getSession();
   const userId = session!.sub;
 
-  const start = new Date(); start.setDate(1); start.setHours(0, 0, 0, 0);
-  const rows = await db.select().from(transactions).where(and(eq(transactions.userId, userId), gte(transactions.date, start)));
-  const income = rows.filter((r) => r.type === "income").reduce((s, r) => s + Number(r.amount), 0);
-  const expense = rows.filter((r) => r.type === "expense").reduce((s, r) => s + Number(r.amount), 0);
-  const lastIncome = rows.filter((r) => r.type === "income").sort((a, b) => +b.date - +a.date)[0];
+  const txs = await db.select().from(transactions).where(eq(transactions.userId, userId));
+  const movements = txs.map((t) => ({
+    id: t.id, type: t.type as "income" | "expense", amount: Number(t.amount),
+    category: t.categoryName ?? "", description: t.description ?? "",
+    date: (t.date instanceof Date ? t.date : new Date(t.date)).toISOString(),
+  }));
 
-  // capital por negocio
   const biz = await db.select().from(businesses).where(eq(businesses.userId, userId)).orderBy(asc(businesses.createdAt));
   const [allSales, allExps, allCaps] = await Promise.all([
     db.select().from(vapeSales).where(eq(vapeSales.userId, userId)),
@@ -34,13 +34,5 @@ export default async function DashboardPage() {
   const [setRow] = await db.select().from(settings).where(eq(settings.userId, userId));
   const prefs = setRow ? mergePrefs(setRow.prefs) : DEFAULT_PREFS;
 
-  return (
-    <DashboardClient
-      businesses={bizData}
-      income={income}
-      expense={expense}
-      lastIncome={lastIncome ? Number(lastIncome.amount) : 0}
-      prefs={prefs}
-    />
-  );
+  return <DashboardClient movements={movements} businesses={bizData} personalCash={prefs.personalCash} />;
 }

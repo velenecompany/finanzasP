@@ -2,12 +2,16 @@ export type Prefs = {
   veleneCapital: number;
   fixed: { carro: number; gasolina: number; comida: number };
   splits: { colchon: number; reinversion: number; libre: number };
+  personalCash: number;
+  expenseCategories: string[];
 };
 
 export const DEFAULT_PREFS: Prefs = {
   veleneCapital: 0,
   fixed: { carro: 0, gasolina: 0, comida: 0 },
   splits: { colchon: 20, reinversion: 50, libre: 30 },
+  personalCash: 0,
+  expenseCategories: [],
 };
 
 export function mergePrefs(raw: unknown): Prefs {
@@ -16,6 +20,8 @@ export function mergePrefs(raw: unknown): Prefs {
     veleneCapital: Number(p.veleneCapital ?? DEFAULT_PREFS.veleneCapital),
     fixed: { ...DEFAULT_PREFS.fixed, ...(p.fixed ?? {}) },
     splits: { ...DEFAULT_PREFS.splits, ...(p.splits ?? {}) },
+    personalCash: Number(p.personalCash ?? 0),
+    expenseCategories: Array.isArray(p.expenseCategories) ? p.expenseCategories : [],
   };
 }
 

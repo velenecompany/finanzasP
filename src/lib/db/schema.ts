@@ -41,6 +41,7 @@ export const transactions = pgTable("transactions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+  categoryName: varchar("category_name", { length: 120 }),
   type: txType("type").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   description: text("description"),
