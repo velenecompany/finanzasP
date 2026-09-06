@@ -241,3 +241,12 @@ export const inventoryPurchases = pgTable("inventory_purchases", {
   note: text("note"),
   date: timestamp("date").defaultNow().notNull(),
 }, (t) => ({ userBizIdx: index("purchases_user_biz_idx").on(t.userId, t.businessId) }));
+
+export const savingsMovements = pgTable("savings_movements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { length: 12 }).notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  note: text("note"),
+  date: timestamp("date").defaultNow().notNull(),
+}, (t) => ({ userIdx: index("savings_user_idx").on(t.userId) }));

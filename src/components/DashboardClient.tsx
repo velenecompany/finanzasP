@@ -22,7 +22,6 @@ export default function DashboardClient({ movements, businesses, personalCash }:
   const [pickerOpen, setPickerOpen] = useState(false);
   const [cashOpen, setCashOpen] = useState(false);
   const [cashInput, setCashInput] = useState(String(personalCash || ""));
-  const [cash, setCash] = useState(personalCash);
   const [savingCash, setSavingCash] = useState(false);
 
   const totalCapital = businesses.reduce((s, b) => s + b.capital, 0);
@@ -43,7 +42,7 @@ export default function DashboardClient({ movements, businesses, personalCash }:
     setSavingCash(true);
     const val = Math.max(0, parseFloat(cashInput) || 0);
     await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ personalCash: val }) });
-    setCash(val); setSavingCash(false); setCashOpen(false);
+    setSavingCash(false); setCashOpen(false); router.refresh();
   }
   async function delMov(id: string) {
     if (!confirm("¿Eliminar este movimiento?")) return;
@@ -66,9 +65,9 @@ export default function DashboardClient({ movements, businesses, personalCash }:
 
         {/* Tarjetas */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] md:gap-[18px]">
-          <button onClick={() => { setCashInput(String(cash || "")); setCashOpen(true); }} className="text-left bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px] hover:border-[#272d36] transition group">
+          <button onClick={() => { setCashInput(String(personalCash || "")); setCashOpen(true); }} className="text-left bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px] hover:border-[#272d36] transition group">
             <div className="flex items-center justify-between"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Dinero en Banco/Efectivo</div><Pencil size={13} className="text-[var(--text-3)] group-hover:text-[var(--text)]" /></div>
-            <div className="text-[18px] md:text-[24px] font-bold tnum mt-1">{formatMXN(cash)}</div>
+            <div className="text-[18px] md:text-[24px] font-bold tnum mt-1">{formatMXN(personalCash)}</div>
           </button>
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Ingresos del mes</div><div className="text-[18px] md:text-[24px] font-bold tnum text-[var(--income)] mt-1">{formatMXN(ingresos)}</div></div>
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-[18px]"><div className="text-[12px] md:text-[12.5px] text-[var(--text-2)]">Egresos del mes</div><div className="text-[18px] md:text-[24px] font-bold tnum text-[var(--expense)] mt-1">{formatMXN(egresos)}</div></div>

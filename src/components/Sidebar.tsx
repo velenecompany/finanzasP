@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Wallet, BarChart3, Target, Receipt,
-  CreditCard, Package, TrendingUp, Bot, FileText, Settings, Store, Plus, LogOut,
+  CreditCard, Package, TrendingUp, Bot, FileText, Settings, Store, Plus, LogOut, PiggyBank,
 } from "lucide-react";
 
 type Biz = { id: string; name: string };
@@ -33,6 +33,7 @@ export default function Sidebar({ name, businesses }: { name: string; businesses
         <Link href="/finanzas" className={link("/finanzas", pathname.startsWith("/finanzas"))}><Wallet size={17} strokeWidth={1.8} />Finanzas</Link>
         <Link href="/presupuestos" className={link("/presupuestos", pathname.startsWith("/presupuestos"))}><BarChart3 size={17} strokeWidth={1.8} />Presupuestos</Link>
         <Link href="/metas" className={link("/metas", pathname.startsWith("/metas"))}><Target size={17} strokeWidth={1.8} />Metas</Link>
+        <Link href="/ahorro" className={link("/ahorro", pathname.startsWith("/ahorro"))}><PiggyBank size={17} strokeWidth={1.8} />Ahorro</Link>
 
         <div className="text-[10.5px] tracking-[0.12em] uppercase text-[var(--text-3)] px-2.5 pt-3.5 pb-1.5 font-semibold font-mono">Crédito</div>
         <Link href="/deudas" className={link("/deudas", pathname.startsWith("/deudas"))}><Receipt size={17} strokeWidth={1.8} />Deudas</Link>
